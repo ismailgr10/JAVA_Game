@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(Get-ChildItem -Recurse -Path \"C:\\\\Users\\\\ismai\\\\Desktop\\\\JAVA Project\\\\game\")",
-      "Bash(Select-Object FullName)"
-    ]
-  }
-}
