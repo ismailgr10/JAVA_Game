@@ -1,0 +1,7 @@
+com\ensa\checkers\model\King.class
+com\ensa\checkers\model\Position.class
+com\ensa\checkers\model\Move.class
+com\ensa\checkers\model\Pawn.class
+com\ensa\checkers\model\Piece.class
+com\ensa\checkers\model\Board.class
+com\ensa\checkers\model\PieceColor.class
