@@ -1,0 +1,193 @@
+@startuml ClassDiagram_ViewController
+
+' ============================================================
+'  JEU DE DAMES — DIAGRAMME 2/2 : VIEW + CONTROLLER + PERSISTENCE
+' ============================================================
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 60
+skinparam shadowing false
+skinparam roundCorner 10
+skinparam classAttributeIconSize 0
+hide circle
+
+skinparam class {
+    FontSize 13
+    FontStyle bold
+    AttributeFontSize 11
+    BorderThickness 1.5
+    BackgroundColor<<view>>       #FDEDEC
+    BorderColor<<view>>           #CB4335
+    BackgroundColor<<controller>> #E9F7EF
+    BorderColor<<controller>>     #229954
+    BackgroundColor<<persist>>    #F4ECF7
+    BorderColor<<persist>>        #7D3C98
+    BackgroundColor<<model>>      #EBF5FB
+    BorderColor<<model>>          #2E86C1
+}
+
+title <size:17><b>Jeu de Dames — Diagramme de Classes (2/2)</b></size>\n<size:11>Couches VIEW, CONTROLLER et PERSISTENCE</size>\n
+
+' --- Référence vers le Model (grisée, pour le contexte) ---
+class Game <<model>> {
+    + tryPlay(move) : boolean
+    + isOver() : boolean
+}
+
+' ============ VIEW ============
+class MainFrame <<view>> {
+    - cardLayout : CardLayout
+    --
+    + showScreen(name) : void
+    + addScreen(name, panel) : void
+}
+class MenuPanel <<view>> {
+    + setListener(l) : void
+}
+class LoginPanel <<view>> {
+    - usernameField : JTextField
+    --
+    + getPlayerName() : String
+    + getMode() : GameMode
+}
+class BoardPanel <<view>> {
+    - {static} CELL_SIZE : int = 70
+    - board : Board
+    - selectedCell : Position
+    --
+    + setBoard(board) : void
+    + setSelected(pos) : void
+    + clearHighlights() : void
+    # paintComponent(g) : void
+}
+interface BoardPanelListener <<view>> {
+    + onCellClicked(pos) : void
+}
+class GameInfoPanel <<view>> {
+    + setCurrentPlayer(player) : void
+    + setCaptureCount(w, b) : void
+    + updateTimer(sec) : void
+    + showAIThinking(b) : void
+}
+class ScoresPanel <<view>> {
+    - table : JTable
+    --
+    + setScores(scores) : void
+}
+class EndGameDialog <<view>> {
+    + setListener(l) : void
+}
+
+' ============ CONTROLLER ============
+class AppController <<controller>> {
+    - mainFrame : MainFrame
+    --
+    + start() : void
+    + showMenu() : void
+    + showGame(p1, p2) : void
+    + showScores() : void
+}
+class MenuController <<controller>> {
+    + onNewGame() : void
+    + onShowScores() : void
+    + onQuit() : void
+}
+class GameController <<controller>> {
+    - game : Game
+    - boardPanel : BoardPanel
+    - selectedCell : Position
+    --
+    + onCellClicked(pos) : void
+    + handleAITurn() : void
+    + handleEndGame() : void
+}
+class ScoresController <<controller>> {
+    + loadScores() : void
+}
+
+' ============ PERSISTENCE ============
+class DatabaseManager <<persist>> {
+    - {static} instance : DatabaseManager
+    - connection : Connection
+    --
+    + {static} getInstance() : DatabaseManager
+    + getConnection() : Connection
+    + close() : void
+}
+class PlayerDAO <<persist>> {
+    + save(player) : int
+    + findByUsername(name) : Player
+    + exists(name) : boolean
+}
+class GameDAO <<persist>> {
+    + save(game, winnerId, sec) : int
+    + findRecent(limit) : List
+}
+class ScoreDAO <<persist>> {
+    + updateScore(playerId, result) : void
+    + getTopScores(limit) : List<ScoreEntry>
+}
+class ScoreEntry <<persist>> {
+    + username : String
+    + gamesPlayed : int
+    + gamesWon : int
+    + totalPoints : int
+}
+
+' --- Relations : implémentation ---
+BoardPanelListener <|.. GameController
+
+' --- Relations : agrégation View ---
+MainFrame o-- MenuPanel
+MainFrame o-- LoginPanel
+MainFrame o-- BoardPanel
+MainFrame o-- ScoresPanel
+
+' --- Relations : Controller pilote la View ---
+AppController    *-- "1" MainFrame  : pilote
+MenuController   --> AppController
+GameController   --> BoardPanel     : rafraîchit
+GameController   --> GameInfoPanel  : met à jour
+ScoresController --> ScoresPanel    : alimente
+
+' --- Relations : Controller utilise Model ---
+GameController   ..> Game           : délègue
+
+' --- Relations : Persistence ---
+PlayerDAO ..> DatabaseManager
+GameDAO   ..> DatabaseManager
+ScoreDAO  ..> DatabaseManager
+ScoreDAO  ..> ScoreEntry            : produit
+
+' --- Relations : Controller utilise Persistence ---
+GameController   ..> GameDAO        : enregistre
+ScoresController ..> ScoreDAO       : interroge
+
+note top of GameController
+  <b>Pièce maîtresse du MVC</b>
+  Implémente BoardPanelListener,
+  reçoit les clics, délègue au Model,
+  rafraîchit la View, persiste en BDD.
+end note
+
+note bottom of DatabaseManager
+  <b>Pattern Singleton</b>
+  Une seule connexion JDBC partagée
+  par tous les DAOs. Credentials lus
+  depuis config.properties.
+end note
+
+note bottom of BoardPanel
+  <b>Rendu graphique pur.</b>
+  paintComponent dessine cases,
+  pions et surlignages.
+  Aucune règle métier ici !
+end note
+
+legend bottom
+  <back:#FDEDEC>   </back> View (Swing)   <back:#E9F7EF>   </back> Controller   <back:#F4ECF7>   </back> Persistence   <back:#EBF5FB>   </back> Model (rappel)
+  ──▷ Héritage   ┄┄▷ Implémentation / Dépendance   ◆── Composition   ◇── Agrégation
+endlegend
+
+@enduml

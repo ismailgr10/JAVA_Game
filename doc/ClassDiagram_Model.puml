@@ -1,0 +1,199 @@
+@startuml ClassDiagram_Model
+
+' ============================================================
+'  JEU DE DAMES — DIAGRAMME 1/2 : COUCHE MODEL
+'  (Logique métier : pions, plateau, règles, joueurs, IA)
+' ============================================================
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 60
+skinparam shadowing false
+skinparam roundCorner 10
+skinparam classAttributeIconSize 0
+hide circle
+
+skinparam class {
+    FontSize 13
+    FontStyle bold
+    AttributeFontSize 11
+    BorderThickness 1.5
+    BackgroundColor<<model>>   #EBF5FB
+    BorderColor<<model>>       #2E86C1
+    BackgroundColor<<ai>>      #E8F8F5
+    BorderColor<<ai>>          #117A65
+    BackgroundColor<<enumc>>   #FEF9E7
+    BorderColor<<enumc>>       #D4AC0D
+}
+
+title <size:17><b>Jeu de Dames — Diagramme de Classes (1/2)</b></size>\n<size:11>Couche MODEL : logique métier</size>\n
+
+' --- Énumérations ---
+enum PieceColor <<enumc>> {
+    BLACK
+    WHITE
+}
+enum GameState <<enumc>> {
+    EN_COURS
+    VICTOIRE_NOIR
+    VICTOIRE_BLANC
+    NUL
+}
+
+' --- Hiérarchie des pièces ---
+abstract class Piece <<model>> {
+    # color : PieceColor
+    # position : Position
+    --
+    + getColor() : PieceColor
+    + getPosition() : Position
+    + setPosition(pos) : void
+    + {abstract} getPossibleMoves(board) : List<Move>
+}
+class Pawn <<model>> {
+    + getPossibleMoves(board) : List<Move>
+}
+class King <<model>> {
+    + getPossibleMoves(board) : List<Move>
+}
+
+' --- Value objects ---
+class Position <<model>> {
+    - row : int
+    - col : int
+    --
+    + getRow() : int
+    + getCol() : int
+    + isValid() : boolean
+    + {static} isValid(row, col) : boolean
+}
+class Move <<model>> {
+    - from : Position
+    - to : Position
+    - capturedPositions : List<Position>
+    - promotion : boolean
+    --
+    + getFrom() : Position
+    + getTo() : Position
+    + getCapturedPositions() : List<Position>
+    + isCapture() : boolean
+    + isPromotion() : boolean
+}
+
+' --- Plateau ---
+class Board <<model>> {
+    - {static} SIZE : int = 8
+    - grid : Piece[][]
+    --
+    + initialize() : void
+    + getPieceAt(pos) : Piece
+    + applyMove(move) : void
+    + removePiece(pos) : void
+    + getAllPieces() : List<Piece>
+    + copy() : Board
+}
+
+' --- Règles ---
+class MoveValidator <<model>> {
+    + isValidMove(board, move, player) : boolean
+    + getValidMovesFor(piece, board) : List<Move>
+    + getMandatoryCaptures(board, player) : List<Move>
+}
+class GameRules <<model>> {
+    + checkWinner(game) : GameState
+    + shouldPromote(piece) : boolean
+    + isCaptureMandatory(board, player) : boolean
+}
+
+' --- Orchestrateur ---
+class Game <<model>> {
+    - board : Board
+    - players : Player[2]
+    - currentPlayerIndex : int
+    - state : GameState
+    --
+    + getCurrentPlayer() : Player
+    + tryPlay(move) : boolean
+    + isOver() : boolean
+    + getState() : GameState
+    + getBoard() : Board
+}
+
+' --- Joueurs ---
+abstract class Player <<model>> {
+    # name : String
+    # color : PieceColor
+    # id : int
+    --
+    + getName() : String
+    + getColor() : PieceColor
+    + {abstract} isHuman() : boolean
+}
+class HumanPlayer <<model>> {
+    + isHuman() : boolean
+}
+class AIPlayer <<model>> {
+    - ai : MinimaxAI
+    --
+    + isHuman() : boolean
+    + setAI(ai) : void
+    + chooseMove(game) : Move
+}
+
+' --- IA ---
+class MinimaxAI <<ai>> {
+    - {static} DEFAULT_DEPTH : int = 4
+    - maxDepth : int
+    --
+    + findBestMove(game) : Move
+    - minimax(game, depth, a, b, max) : int
+}
+class BoardEvaluator <<ai>> {
+    + evaluate(board, perspective) : int
+    - countMaterial(board, color) : int
+}
+
+' --- Relations : héritage ---
+Piece  <|-- Pawn
+Piece  <|-- King
+Player <|-- HumanPlayer
+Player <|-- AIPlayer
+
+' --- Relations : composition ---
+Game     *-- "1"     Board     : contient
+Game     *-- "2"     Player    : oppose
+Board    *-- "0..24" Piece     : contient
+AIPlayer *-- "1"     MinimaxAI : possède
+
+' --- Relations : dépendances ---
+Piece         ..>  Move
+MoveValidator ..>  Board
+GameRules     ..>  Game
+MinimaxAI     ..>  BoardEvaluator : évalue
+MinimaxAI     ..>  Game
+Player        ..>  PieceColor
+
+note bottom of Piece
+  <b>Classe abstraite</b> — polymorphisme :
+  Pawn et King redéfinissent
+  getPossibleMoves() selon leurs règles.
+end note
+
+note right of Game
+  <b>Orchestrateur central</b>
+  Maintient l'état, alterne les joueurs,
+  applique les coups validés.
+end note
+
+note bottom of MinimaxAI
+  <b>Minimax + élagage alpha-beta.</b>
+  À exécuter dans un SwingWorker
+  pour ne pas geler l'interface.
+end note
+
+legend bottom
+  <back:#EBF5FB>   </back> Model métier   <back:#E8F8F5>   </back> Intelligence Artificielle   <back:#FEF9E7>   </back> Énumération
+  ──▷ Héritage      ◆── Composition      ┄┄▷ Dépendance
+endlegend
+
+@enduml
