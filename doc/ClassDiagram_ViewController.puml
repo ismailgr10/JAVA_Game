@@ -2,6 +2,7 @@
 
 ' ============================================================
 '  JEU DE DAMES — DIAGRAMME 2/2 : VIEW + CONTROLLER + PERSISTENCE
+'  Architecture : JavaFX 21 + Scene Builder (FXML)
 ' ============================================================
 
 skinparam linetype ortho
@@ -25,9 +26,11 @@ skinparam class {
     BorderColor<<persist>>        #7D3C98
     BackgroundColor<<model>>      #EBF5FB
     BorderColor<<model>>          #2E86C1
+    BackgroundColor<<fxml>>       #FEF9E7
+    BorderColor<<fxml>>           #D4AC0D
 }
 
-title <size:17><b>Jeu de Dames — Diagramme de Classes (2/2)</b></size>\n<size:11>Couches VIEW, CONTROLLER et PERSISTENCE</size>\n
+title <size:17><b>Jeu de Dames — Diagramme de Classes (2/2)</b></size>\n<size:11>Couches VIEW, CONTROLLER et PERSISTENCE — JavaFX 21 + FXML</size>\n
 
 ' --- Référence vers le Model (grisée, pour le contexte) ---
 class Game <<model>> {
@@ -35,75 +38,100 @@ class Game <<model>> {
     + isOver() : boolean
 }
 
-' ============ VIEW ============
-class MainFrame <<view>> {
-    - cardLayout : CardLayout
-    --
-    + showScreen(name) : void
-    + addScreen(name, panel) : void
-}
-class MenuPanel <<view>> {
-    + setListener(l) : void
-}
-class LoginPanel <<view>> {
-    - usernameField : JTextField
-    --
-    + getPlayerName() : String
-    + getMode() : GameMode
-}
-class BoardPanel <<view>> {
+' ============ VIEW (FXML — fichiers XML, pas des classes Java) ============
+note as FXMLNote
+  <b>Vues FXML</b> (Scene Builder)
+  Ces fichiers ne sont pas des classes Java.
+  Chaque .fxml déclare son contrôleur via fx:controller.
+  ──────────────────────────────────
+  • MenuView.fxml      → MenuController
+  • LoginView.fxml     → LoginController
+  • GameView.fxml      → GameController
+  • ScoresView.fxml    → ScoresController
+  • EndGameView.fxml   → EndGameController
+end note
+
+' --- Seule vraie classe View Java (plateau dynamique, pas de FXML) ---
+class BoardView <<view>> {
     - {static} CELL_SIZE : int = 70
-    - board : Board
-    - selectedCell : Position
+    - cells : Rectangle[][]
+    - pieces : Circle[][]
+    - selectedPos : Position
     --
     + setBoard(board) : void
     + setSelected(pos) : void
     + clearHighlights() : void
-    # paintComponent(g) : void
-}
-interface BoardPanelListener <<view>> {
-    + onCellClicked(pos) : void
-}
-class GameInfoPanel <<view>> {
-    + setCurrentPlayer(player) : void
-    + setCaptureCount(w, b) : void
-    + updateTimer(sec) : void
-    + showAIThinking(b) : void
-}
-class ScoresPanel <<view>> {
-    - table : JTable
-    --
-    + setScores(scores) : void
-}
-class EndGameDialog <<view>> {
     + setListener(l) : void
+    - initGrid() : void
+    - drawPieces(board) : void
+}
+
+interface BoardViewListener <<view>> {
+    + onCellClicked(pos) : void
+    + onMoveDragged(from, to) : void
 }
 
 ' ============ CONTROLLER ============
 class AppController <<controller>> {
-    - mainFrame : MainFrame
+    - stage : Stage
     --
-    + start() : void
+    + start(stage) : void
     + showMenu() : void
+    + showLogin(mode) : void
     + showGame(p1, p2) : void
     + showScores() : void
+    + showEndGame(result) : void
+    - loadFXML(fxml) : Scene
 }
+
 class MenuController <<controller>> {
-    + onNewGame() : void
+    - appController : AppController
+    --
+    + onNewGameVsHuman() : void
+    + onNewGameVsAI() : void
     + onShowScores() : void
     + onQuit() : void
 }
+
+class LoginController <<controller>> {
+    - appController : AppController
+    + usernameField : TextField
+    + modeLabel : Label
+    --
+    + onConfirm() : void
+    + onBack() : void
+}
+
 class GameController <<controller>> {
     - game : Game
-    - boardPanel : BoardPanel
+    - boardView : BoardView
     - selectedCell : Position
+    + currentPlayerLabel : Label
+    + timerLabel : Label
+    + captureCountLabel : Label
     --
     + onCellClicked(pos) : void
+    + onMoveDragged(from, to) : void
     + handleAITurn() : void
     + handleEndGame() : void
+    + updateUI() : void
 }
+
 class ScoresController <<controller>> {
+    + scoresTable : TableView
+    --
+    + initialize() : void
     + loadScores() : void
+    + onBack() : void
+}
+
+class EndGameController <<controller>> {
+    - appController : AppController
+    + resultLabel : Label
+    --
+    + setResult(state) : void
+    + onPlayAgain() : void
+    + onBackToMenu() : void
 }
 
 ' ============ PERSISTENCE ============
@@ -136,39 +164,43 @@ class ScoreEntry <<persist>> {
 }
 
 ' --- Relations : implémentation ---
-BoardPanelListener <|.. GameController
+BoardViewListener <|.. GameController
 
-' --- Relations : agrégation View ---
-MainFrame o-- MenuPanel
-MainFrame o-- LoginPanel
-MainFrame o-- BoardPanel
-MainFrame o-- ScoresPanel
+' --- Relations : BoardView ---
+GameController --> BoardView     : rafraîchit
+BoardView      --> BoardViewListener : notifie
 
-' --- Relations : Controller pilote la View ---
-AppController    *-- "1" MainFrame  : pilote
-MenuController   --> AppController
-GameController   --> BoardPanel     : rafraîchit
-GameController   --> GameInfoPanel  : met à jour
-ScoresController --> ScoresPanel    : alimente
+' --- Relations : Controller → AppController (navigation) ---
+MenuController   --> AppController : navigue
+LoginController  --> AppController : navigue
+EndGameController --> AppController : navigue
 
 ' --- Relations : Controller utilise Model ---
-GameController   ..> Game           : délègue
+GameController ..> Game : délègue
 
 ' --- Relations : Persistence ---
 PlayerDAO ..> DatabaseManager
 GameDAO   ..> DatabaseManager
 ScoreDAO  ..> DatabaseManager
-ScoreDAO  ..> ScoreEntry            : produit
+ScoreDAO  ..> ScoreEntry : produit
 
 ' --- Relations : Controller utilise Persistence ---
-GameController   ..> GameDAO        : enregistre
-ScoresController ..> ScoreDAO       : interroge
+GameController   ..> GameDAO  : enregistre
+ScoresController ..> ScoreDAO : interroge
 
 note top of GameController
   <b>Pièce maîtresse du MVC</b>
-  Implémente BoardPanelListener,
-  reçoit les clics, délègue au Model,
-  rafraîchit la View, persiste en BDD.
+  Implémente BoardViewListener,
+  reçoit les clics et drag & drop,
+  délègue au Model, rafraîchit BoardView,
+  lance l'IA dans un Task<Move>.
+end note
+
+note top of AppController
+  <b>Routeur central (JavaFX)</b>
+  Utilise FXMLLoader pour charger
+  chaque .fxml et Stage.setScene()
+  pour la navigation entre écrans.
 end note
 
 note bottom of DatabaseManager
@@ -178,15 +210,16 @@ note bottom of DatabaseManager
   depuis config.properties.
 end note
 
-note bottom of BoardPanel
-  <b>Rendu graphique pur.</b>
-  paintComponent dessine cases,
-  pions et surlignages.
+note right of BoardView
+  <b>Vue programmatique (pas FXML)</b>
+  Extends GridPane. Affiche les cases
+  (Rectangle) et pions (Circle).
+  Drag & drop natif JavaFX.
   Aucune règle métier ici !
 end note
 
 legend bottom
-  <back:#FDEDEC>   </back> View (Swing)   <back:#E9F7EF>   </back> Controller   <back:#F4ECF7>   </back> Persistence   <back:#EBF5FB>   </back> Model (rappel)
+  <back:#FDEDEC>   </back> View (JavaFX)   <back:#E9F7EF>   </back> Controller (@FXML)   <back:#F4ECF7>   </back> Persistence   <back:#EBF5FB>   </back> Model (rappel)   <back:#FEF9E7>   </back> Vues FXML (fichiers XML)
   ──▷ Héritage   ┄┄▷ Implémentation / Dépendance   ◆── Composition   ◇── Agrégation
 endlegend
 
