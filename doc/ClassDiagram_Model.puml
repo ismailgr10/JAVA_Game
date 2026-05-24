@@ -187,8 +187,9 @@ end note
 
 note bottom of MinimaxAI
   <b>Minimax + élagage alpha-beta.</b>
-  À exécuter dans un SwingWorker
-  pour ne pas geler l'interface.
+  À exécuter dans un Task<Move> (JavaFX)
+  + Platform.runLater() pour ne pas
+  geler l'interface.
 end note
 
 legend bottom
