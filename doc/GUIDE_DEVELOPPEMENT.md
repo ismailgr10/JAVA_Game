@@ -81,7 +81,6 @@ src/main/resources/
 - [ ] `AppController.java` — routeur (FXMLLoader + Stage.setScene), showMenu/showScores/showGame/showEndGame
 - [ ] `MenuView.fxml` (Scene Builder) + `MenuController.java` — boutons Jouer vs Humain / vs IA / Scores / Quitter
 - [ ] `ScoresView.fxml` (Scene Builder) + `ScoresController.java` — TableView, initialize() charge via ScoreDAO
-- [ ] `EndGameView.fxml` (Scene Builder) + `EndGameController.java` — résultat + boutons Rejouer / Menu
 - [ ] `BoardView.java` — extends GridPane, grille 8x8 (Rectangle + Circle), clics + drag & drop
 - [ ] `BoardViewListener.java` — interface onCellClicked(pos), onMoveDragged(from, to)
 - [ ] `style.css` — thème sombre, boutons, labels
@@ -105,6 +104,7 @@ src/main/resources/
 - [ ] `LoginView.fxml` (Scene Builder) + `LoginController.java` — TextField nom, choix mode, crée les joueurs
 - [ ] `GameView.fxml` (Scene Builder) — BorderPane : centre = conteneur BoardView, droite = labels (joueur/captures/timer), bas = Abandonner
 - [ ] `GameController.java` — implémente BoardViewListener, startGame, onCellClicked/onMoveDragged → Game.tryPlay, handleAITurn dans un Task<Move>
+- [ ] `EndGameView.fxml` (Scene Builder) + `EndGameController.java` — résultat + boutons Rejouer / Menu (reçoit le gagnant de GameController)
 
 **🧠 Logique**
 - [ ] `Player.java` (abstract) + `HumanPlayer.java` + `AIPlayer.java` (chooseMove via MinimaxAI)
