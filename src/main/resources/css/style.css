@@ -428,27 +428,49 @@
 
 /* Case claire du damier */
 .board-square-light {
-    -fx-background-color: -wood-light;
+    -fx-background-image: url('/images/wood-clair.png');
+    -fx-background-size: cover;
+    -fx-background-position: center center;
+    -fx-background-repeat: no-repeat;
 }
 
 /* Case sombre du damier */
 .board-square-dark {
-    -fx-background-color: -wood-square-dark;
+    -fx-background-image: url('/images/wood-dark.png');
+    -fx-background-size: cover;
+    -fx-background-position: center center;
+    -fx-background-repeat: no-repeat;
 }
 
-/* Case sélectionnée / coup possible — contour jaune vif */
+/* Case sélectionnée — texture claire + bordure jaune */
 .square-selected {
-    -fx-background-color: -wood-light;
+    -fx-background-image: url('/images/wood-clair.png');
+    -fx-background-size: cover;
+    -fx-background-position: center center;
+    -fx-background-repeat: no-repeat;
     -fx-border-color: -accent-select;
     -fx-border-width: 3px;
     -fx-effect: dropshadow(gaussian, rgba(242,196,0,0.55), 10, 0.4, 0, 0);
 }
 
 .square-selected-dark {
-    -fx-background-color: -wood-square-dark;
+    -fx-background-image: url('/images/wood-dark.png');
+    -fx-background-size: cover;
+    -fx-background-position: center center;
+    -fx-background-repeat: no-repeat;
     -fx-border-color: -accent-select;
     -fx-border-width: 3px;
     -fx-effect: dropshadow(gaussian, rgba(242,196,0,0.55), 10, 0.4, 0, 0);
+}
+
+/* Case accessible — texture sombre + bordure verte */
+.square-movable {
+    -fx-background-image: url('/images/wood-dark.png');
+    -fx-background-size: cover;
+    -fx-background-position: center center;
+    -fx-background-repeat: no-repeat;
+    -fx-border-color: rgba(80, 200, 80, 0.85);
+    -fx-border-width: 2px;
 }
 
 /* Pion blanc */

@@ -1,14 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
 
-<AnchorPane xmlns="http://javafx.com/javafx"
-            xmlns:fx="http://javafx.com/fxml"
-            fx:controller="CONTROLLER_NAME"
-            prefHeight="400.0" prefWidth="600.0">
-
-</AnchorPane>
+<StackPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
+           prefHeight="620.0" prefWidth="620.0"
+           styleClass="view-wood-bg"
+           xmlns="http://javafx.com/javafx/21"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.ensa.checkers.controller.ScoresController">
+   <children>
+      <VBox alignment="CENTER" prefHeight="620.0" prefWidth="620.0" spacing="24.0">
+         <padding>
+            <Insets bottom="36.0" left="30.0" right="30.0" top="36.0" />
+         </padding>
+         <children>
+            <Label styleClass="title-h1" text="🏆  TABLEAU DES SCORES" />
+            <TableView fx:id="tableScores" prefHeight="420.0" prefWidth="560.0" styleClass="table-scores">
+               <columns>
+                  <TableColumn fx:id="colNom"       prefWidth="140.0" text="NOM" />
+                  <TableColumn fx:id="colParties"   prefWidth="140.0" text="PARTIES JOUÉES" />
+                  <TableColumn fx:id="colVictoires" prefWidth="140.0" text="VICTOIRES" />
+                  <TableColumn fx:id="colPoints"    prefWidth="140.0" text="POINTS" />
+               </columns>
+            </TableView>
+            <Button mnemonicParsing="false" onAction="#onRetour" styleClass="button-wood" text="← RETOUR">
+               <VBox.margin>
+                  <Insets top="10.0" />
+               </VBox.margin>
+            </Button>
+         </children>
+      </VBox>
+   </children>
+</StackPane>
