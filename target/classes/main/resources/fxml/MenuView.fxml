@@ -22,10 +22,10 @@
             </Label>
             <VBox alignment="CENTER" spacing="18.0">
                <children>
-                  <Button mnemonicParsing="false" onAction="#onJouerHumain" styleClass="button-wood" text="👤👤  JOUER VS HUMAIN" />
-                  <Button mnemonicParsing="false" onAction="#onJouerIA"      styleClass="button-wood" text="👤🤖  JOUER VS IA" />
-                  <Button mnemonicParsing="false" onAction="#onScores"        styleClass="button-wood" text="🏆  TABLEAU DES SCORES" />
-                  <Button mnemonicParsing="false" onAction="#onQuitter"       styleClass="button-wood" text="🚪  QUITTER" />
+                  <Button mnemonicParsing="false" onAction="#onJouerHumain" styleClass="button-wood" text="JOUER VS HUMAIN" />
+                  <Button mnemonicParsing="false" onAction="#onJouerIA"      styleClass="button-wood" text="JOUER VS IA" />
+                  <Button mnemonicParsing="false" onAction="#onScores"        styleClass="button-wood" text="TABLEAU DES SCORES" />
+                  <Button mnemonicParsing="false" onAction="#onQuitter"       styleClass="button-wood" text="QUITTER" />
                </children>
             </VBox>
          </children>
