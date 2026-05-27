@@ -67,4 +67,25 @@ public class Pawn extends Piece {
         return (getColor() == PieceColor.WHITE && row == 0)
             || (getColor() == PieceColor.BLACK && row == 7);
     }
+
+    @Override
+    public boolean canPromote() { return true; }
+
+    @Override
+    public List<int[]> getCaptures(Board board, Position from) {
+        List<int[]> steps = new ArrayList<>();
+        int row = from.getRow(), col = from.getCol();
+        int fwd = (getColor() == PieceColor.WHITE) ? -1 : 1;
+
+        for (int dc : new int[]{-1, 1}) {
+            int er = row + fwd,     ec = col + dc;
+            int lr = row + 2 * fwd, lc = col + 2 * dc;
+            if (!Position.isValid(er, ec) || !Position.isValid(lr, lc)) continue;
+            Piece target = board.getPieceAt(new Position(er, ec));
+            if (target != null && target.getColor() != getColor()
+                    && board.getPieceAt(new Position(lr, lc)) == null)
+                steps.add(new int[]{er, ec, lr, lc});
+        }
+        return steps;
+    }
 }

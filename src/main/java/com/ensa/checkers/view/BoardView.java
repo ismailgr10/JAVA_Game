@@ -1,13 +1,13 @@
 package com.ensa.checkers.view;
 
 import com.ensa.checkers.model.Board;
-import com.ensa.checkers.model.King;
 import com.ensa.checkers.model.Piece;
 import com.ensa.checkers.model.PieceColor;
 import com.ensa.checkers.model.Position;
 import javafx.scene.control.Label;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -20,7 +20,10 @@ public class BoardView extends GridPane {
 
     private static final int SIZE       = 8;
     private static final int CELL_SIZE  = 72;
-    private static final int PIECE_SIZE = 48;
+    private static final int PIECE_SIZE = 56;
+
+    private final Image imageWhite = new Image(getClass().getResourceAsStream("/images/white_pion.png"));
+    private final Image imageDark  = new Image(getClass().getResourceAsStream("/images/dark_pion.png"));
 
     private final StackPane[][]     cells    = new StackPane[SIZE][SIZE];
     private final BoardViewListener listener;
@@ -122,25 +125,24 @@ public class BoardView extends GridPane {
 
     private StackPane buildPiece(Piece piece) {
         boolean isWhite = piece.getColor() == PieceColor.WHITE;
-        boolean isKing  = piece instanceof King;
+        boolean isKing  = !piece.canPromote();
 
         // Ombre portée
         Circle shadow = new Circle(PIECE_SIZE / 2.0, Color.rgb(0, 0, 0, 0.35));
         shadow.setTranslateY(3);
 
-        // Corps du pion via CSS (gradient radial défini dans style.css)
-        Region body = new Region();
-        body.setPrefSize(PIECE_SIZE, PIECE_SIZE);
-        body.setMaxSize(PIECE_SIZE, PIECE_SIZE);
-        body.getStyleClass().add(isWhite ? "piece-white" : "piece-black");
-        if (isKing) body.getStyleClass().add("piece-king");
+        // Image du pion
+        ImageView imageView = new ImageView(isWhite ? imageWhite : imageDark);
+        imageView.setFitWidth(PIECE_SIZE);
+        imageView.setFitHeight(PIECE_SIZE);
+        imageView.setPreserveRatio(true);
 
-        StackPane pion = new StackPane(shadow, body);
+        StackPane pion = new StackPane(shadow, imageView);
 
         // Couronne pour les dames
         if (isKing) {
             Label crown = new Label("♛");
-            crown.setStyle("-fx-font-size: 16px; -fx-text-fill: "
+            crown.setStyle("-fx-font-size: 18px; -fx-text-fill: "
                 + (isWhite ? "#3E2A20;" : "#F2C400;"));
             pion.getChildren().add(crown);
         }

@@ -31,3 +31,6 @@ bin/
 
 ### Claude Code ###
 .claude/
+
+### Credentials ###
+src/main/resources/config.properties

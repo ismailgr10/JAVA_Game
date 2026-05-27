@@ -53,18 +53,41 @@ src/main/resources/
 - [x] `PieceColor` enum (WHITE, BLACK, opposite())
 - [x] `Position` (row, col, isValid, equals, hashCode)
 - [x] `Move` (from, to, capturedPositions, addCaptured, isCapture, isPromotion)
-- [x] `Piece` abstract (color, position, getPossibleMoves abstract)
-- [x] `Pawn` (getPossibleMoves : déplacements + captures + promotion)
-- [x] `King` (getPossibleMoves : toutes directions, captures)
+- [x] `Piece` abstract (color, position, getPossibleMoves, canPromote, getCaptures)
+- [x] `Pawn` (déplacements avant + captures avant + promotion + getCaptures)
+- [x] `King` (dame volante : toute distance diagonale + getCaptures)
 - [x] `Board` (grid 8x8, initialize, getPieceAt, applyMove, removePiece, copy)
 - [x] `GameState` enum (EN_COURS, VICTOIRE_BLANC, VICTOIRE_NOIR, NUL)
-- [x] `ScoreEntry` (DTO : username, gamesPlayed, gamesWon, totalPoints)
+- [x] `ScoreEntry` (DTO : nom, partiesJouees, victoires, points — JavaFX Properties)
+- [x] `GameRules` (règles dames espagnoles : prise obligatoire, maximale, multi-capture, promotion)
+- [x] `BoardEvaluator` (evaluate : pion=10, dame=30)
+
+### Vue
+- [x] `Main.java` (point d'entrée)
+- [x] `AppController.java` (routeur navigation)
+- [x] `MenuView.fxml` + `MenuController.java`
+- [x] `ScoresView.fxml` + `ScoresController.java`
+- [x] `BoardView.java` (GridPane 8x8, textures bois, pions, highlights)
+- [x] `BoardViewListener.java` (interface clics + drag)
+- [x] `style.css` (thème bois complet)
+
+### DAO
+- [x] `DatabaseManager.java` (singleton JDBC, lit config.properties)
+- [x] `ScoreDAO.java` (getTopScores SQL réel + mettreAJourScore)
+- [x] `PlayerDAO.java` (ajouterJoueur, joueurExiste)
+- [x] `GameDAO.java` (enregistrerPartie)
+- [x] `config.properties` (identifiants MySQL, ignoré par git)
+
+### Base de données (tables créées dans phpMyAdmin)
+- [x] `joueurs` (id, nom)
+- [x] `parties` (id, joueur1, joueur2, gagnant, mode, date_partie)
+- [x] `scores` (id, nom, parties, victoires, points)
 
 ### Infrastructure
 - [x] Maven (pom.xml : javafx-controls, javafx-fxml, mysql-connector-j)
 - [x] JavaFX 21 résolu + `mvn javafx:run` fonctionnel
-- [x] Scene Builder 25 installé et lié à IntelliJ
-- [x] Structure de packages propre + diagrammes à jour (doc/*.puml)
+- [x] Scene Builder installé et lié à IntelliJ
+- [x] Structure de packages propre
 
 ---
 
@@ -77,24 +100,26 @@ src/main/resources/
 ### 🔵 ISMAIL — branche `feat/ismail`
 
 **🖥️ UI**
-- [ ] `Main.java` — point d'entrée, crée l'AppController et lance start()
-- [ ] `AppController.java` — routeur (FXMLLoader + Stage.setScene), showMenu/showScores/showGame/showEndGame
-- [ ] `MenuView.fxml` (Scene Builder) + `MenuController.java` — boutons Jouer vs Humain / vs IA / Scores / Quitter
-- [ ] `ScoresView.fxml` (Scene Builder) + `ScoresController.java` — TableView, initialize() charge via ScoreDAO
-- [ ] `BoardView.java` — extends GridPane, grille 8x8 (Rectangle + Circle), clics + drag & drop
-- [ ] `BoardViewListener.java` — interface onCellClicked(pos), onMoveDragged(from, to)
-- [ ] `style.css` — thème sombre, boutons, labels
+- [x] `Main.java` — point d'entrée
+- [x] `AppController.java` — routeur navigation
+- [x] `MenuView.fxml` + `MenuController.java`
+- [x] `ScoresView.fxml` + `ScoresController.java`
+- [x] `BoardView.java` — GridPane 8x8, textures bois, clics + drag
+- [x] `BoardViewListener.java`
+- [x] `style.css` — thème bois complet
 
 **🧠 Logique**
-- [ ] `GameRules.java` — checkWinner(game), shouldPromote(piece), isCaptureMandatory(board, player)
+- [x] `GameRules.java` — règles dames espagnoles complètes
 
 **🤖 IA**
-- [ ] `BoardEvaluator.java` — evaluate(board, color) : +10 par pion adverse manquant, +30 par dame
+- [x] `BoardEvaluator.java` — evaluate(board, color)
 
 **💾 DAO**
-- [ ] `DatabaseManager.java` — singleton connexion JDBC (credentials dans config.properties)
-- [ ] `ScoreDAO.java` — updateScore(playerId, result), getTopScores(limit)
-- [ ] `config.properties` — url, user, password de la base MySQL (lu par DatabaseManager)
+- [x] `DatabaseManager.java` — singleton JDBC
+- [x] `config.properties` — identifiants MySQL
+- [x] `ScoreDAO.java` — getTopScores (SQL réel) + mettreAJourScore
+- [x] `PlayerDAO.java` — ajouterJoueur(nom), joueurExiste(nom)
+- [x] `GameDAO.java` — enregistrerPartie(joueur1, joueur2, gagnant, mode)
 
 ---
 
@@ -115,7 +140,6 @@ src/main/resources/
 - [ ] `MinimaxAI.java` — findBestMove(game), minimax + élagage alpha-bêta, profondeur 4
 
 **💾 DAO**
-- [ ] `schema.sql` — script de création de la base MySQL + tables `players`, `games`, `scores`
 - [ ] `PlayerDAO.java` — save(player), findByUsername(name), exists(name)
 - [ ] `GameDAO.java` — save(game, winnerId, sec), findRecent(limit)
 
@@ -127,8 +151,8 @@ Un **contrat** = un point de contact entre vos deux parties. Avant de coder les
 classes couplées, mettez-vous d'accord sur les signatures exactes. Chacun pilote 2 contrats.
 
 ### 🔵 ISMAIL
-- [ ] **Contrat BoardView** — définir `setBoard(board)`, `setListener(l)`, `setSelected(pos)`, `clearHighlights()` (appelées par `GameController` de Taha)
-- [ ] **Contrat DatabaseManager** — définir `getInstance()`, `getConnection()` (appelées par tous les DAO)
+- [x] **Contrat BoardView** — `setBoard(board)`, `setListener(l)`, `setSelected(pos)`, `clearHighlights()` (appelées par `GameController` de Taha)
+- [x] **Contrat DatabaseManager** — `getConnexion()`, `fermerConnexion()` (appelées par tous les DAO)
 
 ### 🟢 TAHA
 - [ ] **Contrat GameRules** — définir `checkWinner(game)`, `shouldPromote(piece)`, `isCaptureMandatory(board, player)` (appelées par `Game`)
@@ -159,7 +183,7 @@ classes couplées, mettez-vous d'accord sur les signatures exactes. Chacun pilot
 
 ## Checklist finale avant rendu
 
-- [ ] `mvn javafx:run` démarre sans erreur
+- [x] `mvn javafx:run` démarre sans erreur
 - [ ] Menu → Login → Plateau → fin de partie → scores : flux complet fonctionnel
 - [ ] Partie Humain vs Humain jouable
 - [ ] Partie Humain vs IA jouable (IA ne gèle pas l'interface)
