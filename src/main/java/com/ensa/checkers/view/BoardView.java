@@ -4,7 +4,6 @@ import com.ensa.checkers.model.Board;
 import com.ensa.checkers.model.Piece;
 import com.ensa.checkers.model.PieceColor;
 import com.ensa.checkers.model.Position;
-import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
@@ -22,8 +21,10 @@ public class BoardView extends GridPane {
     private static final int CELL_SIZE  = 72;
     private static final int PIECE_SIZE = 56;
 
-    private final Image imageWhite = new Image(getClass().getResourceAsStream("/images/white_pion.png"));
-    private final Image imageDark  = new Image(getClass().getResourceAsStream("/images/dark_pion.png"));
+    private final Image imageWhite     = new Image(getClass().getResourceAsStream("/images/white_pion.png"));
+    private final Image imageDark      = new Image(getClass().getResourceAsStream("/images/dark_pion.png"));
+    private final Image imageWhiteKing = new Image(getClass().getResourceAsStream("/images/white-king.png"));
+    private final Image imageDarkKing  = new Image(getClass().getResourceAsStream("/images/dark-king.png"));
 
     private final StackPane[][]     cells    = new StackPane[SIZE][SIZE];
     private final BoardViewListener listener;
@@ -131,23 +132,17 @@ public class BoardView extends GridPane {
         Circle shadow = new Circle(PIECE_SIZE / 2.0, Color.rgb(0, 0, 0, 0.35));
         shadow.setTranslateY(3);
 
-        // Image du pion
-        ImageView imageView = new ImageView(isWhite ? imageWhite : imageDark);
+        // Image du pion ou de la dame
+        Image image = isKing
+            ? (isWhite ? imageWhiteKing : imageDarkKing)
+            : (isWhite ? imageWhite     : imageDark);
+
+        ImageView imageView = new ImageView(image);
         imageView.setFitWidth(PIECE_SIZE);
         imageView.setFitHeight(PIECE_SIZE);
         imageView.setPreserveRatio(true);
 
-        StackPane pion = new StackPane(shadow, imageView);
-
-        // Couronne pour les dames
-        if (isKing) {
-            Label crown = new Label("♛");
-            crown.setStyle("-fx-font-size: 18px; -fx-text-fill: "
-                + (isWhite ? "#3E2A20;" : "#F2C400;"));
-            pion.getChildren().add(crown);
-        }
-
-        return pion;
+        return new StackPane(shadow, imageView);
     }
 
     /** Petit point vert au centre des cases accessibles. */
