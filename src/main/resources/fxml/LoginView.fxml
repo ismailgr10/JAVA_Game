@@ -1,14 +1,61 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
 
-<AnchorPane xmlns="http://javafx.com/javafx"
-            xmlns:fx="http://javafx.com/fxml"
-            fx:controller="CONTROLLER_NAME"
-            prefHeight="400.0" prefWidth="600.0">
+<StackPane xmlns="http://javafx.com/javafx/21"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.ensa.checkers.controller.LoginController"
+           prefHeight="520.0" prefWidth="620.0"
+           styleClass="view-wood-bg">
 
-</AnchorPane>
+    <VBox styleClass="panel-glass"
+          maxWidth="420.0" spacing="14.0"
+          StackPane.alignment="CENTER">
+        <padding>
+            <Insets bottom="30.0" left="36.0" right="36.0" top="30.0"/>
+        </padding>
+
+        <!-- Titre -->
+        <Label text="CONFIGURATION DE LA PARTIE"
+               style="-fx-font-family: 'Montserrat', 'Segoe UI', sans-serif;
+                      -fx-font-size: 20px; -fx-font-weight: bold;
+                      -fx-text-fill: -text-on-light;"/>
+
+        <Region prefHeight="4.0"/>
+        <Separator/>
+        <Region prefHeight="4.0"/>
+
+        <!-- Nom du joueur -->
+        <Label text="NOM DU JOUEUR" styleClass="form-label"/>
+        <TextField fx:id="nameField"
+                   promptText="Entrez votre nom..."
+                   styleClass="text-field"/>
+
+        <!-- Choix du mode -->
+        <Label text="CHOIX DU MODE" styleClass="form-label"/>
+        <ComboBox fx:id="modeCombo" maxWidth="Infinity" styleClass="combo-box"/>
+
+        <!-- Message d'erreur -->
+        <Label fx:id="errorLabel"
+               style="-fx-text-fill: #c0392b; -fx-font-size: 12px; -fx-font-weight: bold;"
+               text="" visible="false" managed="false"/>
+
+        <Region prefHeight="6.0"/>
+
+        <!-- Bouton -->
+        <Button text="COMMENCER LA PARTIE"
+                styleClass="button-primary"
+                maxWidth="Infinity"
+                onAction="#onConfirm"/>
+    </VBox>
+
+</StackPane>
