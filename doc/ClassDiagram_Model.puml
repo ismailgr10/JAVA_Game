@@ -30,8 +30,10 @@ title <size:17><b>Jeu de Dames — Diagramme de Classes (1/2)</b></size>\n<size:
 
 ' --- Énumérations ---
 enum PieceColor <<enumc>> {
-    BLACK
     WHITE
+    BLACK
+    --
+    + opposite() : PieceColor
 }
 enum GameState <<enumc>> {
     EN_COURS
@@ -42,19 +44,27 @@ enum GameState <<enumc>> {
 
 ' --- Hiérarchie des pièces ---
 abstract class Piece <<model>> {
-    # color : PieceColor
-    # position : Position
+    - color : PieceColor
+    - position : Position
     --
     + getColor() : PieceColor
     + getPosition() : Position
     + setPosition(pos) : void
     + {abstract} getPossibleMoves(board) : List<Move>
+    + {abstract} canPromote() : boolean
+    + {abstract} getCaptures(board, from) : List<int[]>
 }
+
 class Pawn <<model>> {
     + getPossibleMoves(board) : List<Move>
+    + canPromote() : boolean
+    + getCaptures(board, from) : List<int[]>
 }
+
 class King <<model>> {
     + getPossibleMoves(board) : List<Move>
+    + canPromote() : boolean
+    + getCaptures(board, from) : List<int[]>
 }
 
 ' --- Value objects ---
@@ -64,18 +74,19 @@ class Position <<model>> {
     --
     + getRow() : int
     + getCol() : int
-    + isValid() : boolean
     + {static} isValid(row, col) : boolean
 }
+
 class Move <<model>> {
     - from : Position
     - to : Position
     - capturedPositions : List<Position>
-    - promotion : boolean
+    - isPromotion : boolean
     --
     + getFrom() : Position
     + getTo() : Position
     + getCapturedPositions() : List<Position>
+    + addCaptured(pos) : void
     + isCapture() : boolean
     + isPromotion() : boolean
 }
@@ -89,6 +100,7 @@ class Board <<model>> {
     + getPieceAt(pos) : Piece
     + applyMove(move) : void
     + removePiece(pos) : void
+    + setPiece(pos, piece) : void
     + getAllPieces() : List<Piece>
     + copy() : Board
 }
@@ -100,9 +112,11 @@ class MoveValidator <<model>> {
     + getMandatoryCaptures(board, player) : List<Move>
 }
 class GameRules <<model>> {
-    + checkWinner(game) : GameState
-    + shouldPromote(piece) : boolean
-    + isCaptureMandatory(board, player) : boolean
+    + {static} getLegalMoves(board, color) : List<Move>
+    + {static} checkWinner(board, color) : boolean
+    + {static} shouldPromote(piece, move) : boolean
+    + {static} isCaptureMandatory(board, color) : boolean
+    + {static} chercherCaptures(board, piece, from, capturees, visitees, resultat) : void
 }
 
 ' --- Orchestrateur ---
@@ -146,11 +160,11 @@ class MinimaxAI <<ai>> {
     - maxDepth : int
     --
     + findBestMove(game) : Move
-    - minimax(game, depth, a, b, max) : int
+    - minimax(game, depth, alpha, beta, maximizing) : int
 }
+
 class BoardEvaluator <<ai>> {
-    + evaluate(board, perspective) : int
-    - countMaterial(board, color) : int
+    + {static} evaluate(board, color) : int
 }
 
 ' --- Relations : héritage ---
@@ -168,7 +182,9 @@ AIPlayer *-- "1"     MinimaxAI : possède
 ' --- Relations : dépendances ---
 Piece         ..>  Move
 MoveValidator ..>  Board
-GameRules     ..>  Game
+GameRules     ..>  Board
+GameRules     ..>  PieceColor
+Game          ..>  GameState
 MinimaxAI     ..>  BoardEvaluator : évalue
 MinimaxAI     ..>  Game
 Player        ..>  PieceColor
@@ -176,20 +192,25 @@ Player        ..>  PieceColor
 note bottom of Piece
   <b>Classe abstraite</b> — polymorphisme :
   Pawn et King redéfinissent
-  getPossibleMoves() selon leurs règles.
+  getPossibleMoves() et getCaptures()
+  selon leurs règles propres.
 end note
 
-note right of Game
-  <b>Orchestrateur central</b>
-  Maintient l'état, alterne les joueurs,
-  applique les coups validés.
+note right of GameRules
+  <b>Toutes méthodes statiques.</b>
+  Prise obligatoire + maximale.
+  chercherCaptures() est récursive :
+  simule le plateau pour enchaîner
+  plusieurs captures en un coup.
+end note
+
+note bottom of Game
+  <b>Squelette</b> — à implémenter.
 end note
 
 note bottom of MinimaxAI
-  <b>Minimax + élagage alpha-beta.</b>
-  À exécuter dans un Task<Move> (JavaFX)
-  + Platform.runLater() pour ne pas
-  geler l'interface.
+  <b>Squelette</b> — à implémenter.
+  Algorithme Minimax + alpha-beta.
 end note
 
 legend bottom

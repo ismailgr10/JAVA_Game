@@ -1,0 +1,50 @@
+@startuml NavigationDiagram
+title Diagramme de Navigation — Jeu de Dames
+
+skinparam backgroundColor #FEFEFE
+skinparam state {
+    BackgroundColor #D9A96E
+    BorderColor #3E2A20
+    FontColor #3E2A20
+    ArrowColor #3E2A20
+    ArrowFontColor #3E2A20
+}
+
+[*] --> MenuView : lancement de l'application
+
+state MenuView {
+    [*] --> Menu
+}
+
+state LoginView {
+    [*] --> Login
+}
+
+state GameView {
+    [*] --> Jeu
+}
+
+state ScoresView {
+    [*] --> Scores
+}
+
+state EndGameView {
+    [*] --> FinDePartie
+}
+
+MenuView --> LoginView       : Jouer
+MenuView --> ScoresView      : Scores
+MenuView --> [*]             : Quitter
+
+LoginView --> MenuView       : Retour
+LoginView --> GameView       : Confirmer (noms + mode saisis)
+
+GameView --> EndGameView     : Partie terminée\n(victoire / abandon)
+GameView --> MenuView        : Abandonner
+
+EndGameView --> GameView     : Rejouer
+EndGameView --> MenuView     : Menu principal
+
+ScoresView --> MenuView      : Retour
+
+@enduml

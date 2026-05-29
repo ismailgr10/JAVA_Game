@@ -1,0 +1,416 @@
+@startuml ClassDiagram_Full
+
+' ============================================================
+'  JEU DE DAMES — DIAGRAMME COMPLET
+'  MODEL + VIEW + CONTROLLER + PERSISTENCE
+' ============================================================
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 60
+skinparam shadowing false
+skinparam roundCorner 10
+skinparam classAttributeIconSize 0
+hide circle
+
+skinparam class {
+    FontSize 13
+    FontStyle bold
+    AttributeFontSize 11
+    BorderThickness 1.5
+    BackgroundColor<<model>>      #EBF5FB
+    BorderColor<<model>>          #2E86C1
+    BackgroundColor<<ai>>         #E8F8F5
+    BorderColor<<ai>>             #117A65
+    BackgroundColor<<enumc>>      #FEF9E7
+    BorderColor<<enumc>>          #D4AC0D
+    BackgroundColor<<view>>       #FDEDEC
+    BorderColor<<view>>           #CB4335
+    BackgroundColor<<controller>> #E9F7EF
+    BorderColor<<controller>>     #229954
+    BackgroundColor<<persist>>    #F4ECF7
+    BorderColor<<persist>>        #7D3C98
+}
+
+title <size:17><b>Jeu de Dames — Diagramme de Classes Complet</b></size>\n<size:11>MODEL · VIEW · CONTROLLER · PERSISTENCE</size>\n
+
+' ============================================================
+'  ÉNUMÉRATIONS
+' ============================================================
+enum PieceColor <<enumc>> {
+    WHITE
+    BLACK
+    --
+    + opposite() : PieceColor
+}
+enum GameState <<enumc>> {
+    EN_COURS
+    VICTOIRE_NOIR
+    VICTOIRE_BLANC
+    NUL
+}
+
+' ============================================================
+'  MODEL — Hiérarchie des pièces
+' ============================================================
+abstract class Piece <<model>> {
+    - color : PieceColor
+    - position : Position
+    --
+    + getColor() : PieceColor
+    + getPosition() : Position
+    + setPosition(pos) : void
+    + {abstract} getPossibleMoves(board) : List<Move>
+    + {abstract} canPromote() : boolean
+    + {abstract} getCaptures(board, from) : List<int[]>
+}
+
+class Pawn <<model>> {
+    + getPossibleMoves(board) : List<Move>
+    + canPromote() : boolean
+    + getCaptures(board, from) : List<int[]>
+}
+
+class King <<model>> {
+    + getPossibleMoves(board) : List<Move>
+    + canPromote() : boolean
+    + getCaptures(board, from) : List<int[]>
+}
+
+' ============================================================
+'  MODEL — Value objects
+' ============================================================
+class Position <<model>> {
+    - row : int
+    - col : int
+    --
+    + getRow() : int
+    + getCol() : int
+    + {static} isValid(row, col) : boolean
+}
+
+class Move <<model>> {
+    - from : Position
+    - to : Position
+    - capturedPositions : List<Position>
+    - isPromotion : boolean
+    --
+    + getFrom() : Position
+    + getTo() : Position
+    + getCapturedPositions() : List<Position>
+    + addCaptured(pos) : void
+    + isCapture() : boolean
+    + isPromotion() : boolean
+}
+
+' ============================================================
+'  MODEL — Plateau & Règles
+' ============================================================
+class Board <<model>> {
+    - {static} SIZE : int = 8
+    - grid : Piece[][]
+    --
+    + initialize() : void
+    + getPieceAt(pos) : Piece
+    + applyMove(move) : void
+    + removePiece(pos) : void
+    + setPiece(pos, piece) : void
+    + getAllPieces() : List<Piece>
+    + copy() : Board
+}
+
+class GameRules <<model>> {
+    + {static} getLegalMoves(board, color) : List<Move>
+    + {static} checkWinner(board, color) : boolean
+    + {static} shouldPromote(piece, move) : boolean
+    + {static} isCaptureMandatory(board, color) : boolean
+    + {static} chercherCaptures(board, piece, from, capturees, visitees, resultat) : void
+}
+
+' ============================================================
+'  MODEL — Règles
+' ============================================================
+class MoveValidator <<model>> {
+    + isValidMove(board, move, player) : boolean
+    + getValidMovesFor(piece, board) : List<Move>
+    + getMandatoryCaptures(board, player) : List<Move>
+}
+
+' ============================================================
+'  MODEL — Orchestrateur & Joueurs
+' ============================================================
+class Game <<model>> {
+    - board : Board
+    - players : Player[2]
+    - currentPlayerIndex : int
+    - state : GameState
+    --
+    + getCurrentPlayer() : Player
+    + tryPlay(move) : boolean
+    + isOver() : boolean
+    + getState() : GameState
+    + getBoard() : Board
+}
+
+abstract class Player <<model>> {
+    # name : String
+    # color : PieceColor
+    # id : int
+    --
+    + getName() : String
+    + getColor() : PieceColor
+    + {abstract} isHuman() : boolean
+}
+
+class HumanPlayer <<model>> {
+    + isHuman() : boolean
+}
+
+class AIPlayer <<model>> {
+    - ai : MinimaxAI
+    --
+    + isHuman() : boolean
+    + setAI(ai) : void
+    + chooseMove(game) : Move
+}
+
+' ============================================================
+'  IA
+' ============================================================
+class MinimaxAI <<ai>> {
+    - {static} DEFAULT_DEPTH : int = 4
+    - maxDepth : int
+    --
+    + findBestMove(game) : Move
+    - minimax(game, depth, alpha, beta, maximizing) : int
+}
+
+class BoardEvaluator <<ai>> {
+    + {static} evaluate(board, color) : int
+}
+
+' ============================================================
+'  VIEW
+' ============================================================
+class BoardView <<view>> {
+    - {static} CELL_SIZE : int = 72
+    - {static} PIECE_SIZE : int = 56
+    - cells : StackPane[][]
+    - selectedPos : Position
+    - movable : Set<Position>
+    - dragFrom : Position
+    --
+    + refresh(board) : void
+    + highlightSelected(pos) : void
+    + highlightMoves(positions) : void
+    + clearHighlights() : void
+}
+
+interface BoardViewListener <<view>> {
+    + onCellClicked(pos) : void
+    + onMoveDragged(from, to) : void
+}
+
+' ============================================================
+'  CONTROLLER
+' ============================================================
+class AppController <<controller>> {
+    - stage : Stage
+    --
+    + showMenu() : void
+    + showLogin(mode) : void
+    + showGame(player1Name, player2Name, mode) : void
+    + showScores() : void
+    + showEndGame(winnerName) : void
+}
+
+class MenuController <<controller>> {
+    - appController : AppController
+    --
+    + setAppController(ac) : void
+    + onJouerHumain() : void
+    + onJouerIA() : void
+    + onScores() : void
+    + onQuitter() : void
+}
+
+class LoginController <<controller>> {
+    - appController : AppController
+    - mode : String
+    + usernameField : TextField
+    + modeLabel : Label
+    --
+    + setAppController(ac) : void
+    + setMode(mode) : void
+    + onConfirm() : void
+    + onBack() : void
+}
+
+class GameController <<controller>> {
+    - appController : AppController
+    - game : Game
+    - boardView : BoardView
+    - selectedCell : Position
+    + currentPlayerLabel : Label
+    + timerLabel : Label
+    + captureCountLabel : Label
+    --
+    + setAppController(ac) : void
+    + startGame(player1Name, player2Name, mode) : void
+    + onCellClicked(pos) : void
+    + onMoveDragged(from, to) : void
+    + handleAITurn() : void
+    + handleEndGame() : void
+    + updateUI() : void
+}
+
+class ScoresController <<controller>> {
+    - appController : AppController
+    - tableScores : TableView<ScoreEntry>
+    --
+    + setAppController(ac) : void
+    + initialize() : void
+    + onRetour() : void
+}
+
+class EndGameController <<controller>> {
+    - appController : AppController
+    - winnerName : String
+    + resultLabel : Label
+    --
+    + setAppController(ac) : void
+    + setWinner(winnerName) : void
+    + onPlayAgain() : void
+    + onBackToMenu() : void
+}
+
+' ============================================================
+'  PERSISTENCE
+' ============================================================
+class DatabaseManager <<persist>> {
+    - {static} connexion : Connection
+    --
+    + {static} getConnexion() : Connection
+    + {static} fermerConnexion() : void
+}
+
+class PlayerDAO <<persist>> {
+    + {static} ajouterJoueur(nom) : void
+    + {static} joueurExiste(nom) : boolean
+}
+
+class GameDAO <<persist>> {
+    + {static} enregistrerPartie(joueur1, joueur2, gagnant, mode) : void
+}
+
+class ScoreDAO <<persist>> {
+    + getTopScores() : List<ScoreEntry>
+    + mettreAJourScore(nom, victoire) : void
+}
+
+class ScoreEntry <<persist>> {
+    - nom : StringProperty
+    - partiesJouees : IntegerProperty
+    - victoires : IntegerProperty
+    - points : IntegerProperty
+    --
+    + getNom() : String
+    + getPartiesJouees() : int
+    + getVictoires() : int
+    + getPoints() : int
+    + nomProperty() : StringProperty
+    + partiesJoueesProperty() : IntegerProperty
+    + victoiresProperty() : IntegerProperty
+    + pointsProperty() : IntegerProperty
+}
+
+' ============================================================
+'  RELATIONS — MODEL
+' ============================================================
+Piece      <|-- Pawn
+Piece      <|-- King
+Player     <|-- HumanPlayer
+Player     <|-- AIPlayer
+Game       *-- "1"     Board     : contient
+Game       *-- "2"     Player    : oppose
+Board      *-- "0..24" Piece     : contient
+AIPlayer   *-- "1"     MinimaxAI : possède
+Piece      ..>  Move
+Piece      ..>  PieceColor
+Player     ..>  PieceColor
+Game       ..>  GameState
+MoveValidator ..> Board
+GameRules  ..>  Board
+GameRules  ..>  PieceColor
+MinimaxAI  ..>  BoardEvaluator   : évalue
+MinimaxAI  ..>  Game
+
+' ============================================================
+'  RELATIONS — VIEW / CONTROLLER
+' ============================================================
+BoardViewListener  <|..          GameController
+GameController     -->           BoardView         : rafraîchit
+BoardView          -->           BoardViewListener : notifie
+
+MenuController     -->  AppController : navigue
+LoginController    -->  AppController : navigue
+EndGameController  -->  AppController : navigue
+ScoresController   -->  AppController : navigue
+
+GameController     ..>  Board      : utilise
+GameController     ..>  GameRules  : utilise
+
+' ============================================================
+'  RELATIONS — PERSISTENCE
+' ============================================================
+PlayerDAO    ..>  DatabaseManager : utilise
+GameDAO      ..>  DatabaseManager : utilise
+ScoreDAO     ..>  DatabaseManager : utilise
+ScoreDAO     ..>  ScoreEntry      : produit
+
+ScoresController ..>  ScoreDAO    : interroge
+GameController   ..>  GameDAO     : enregistre
+GameController   ..>  PlayerDAO   : enregistre
+
+' ============================================================
+'  NOTES
+' ============================================================
+note bottom of Piece
+  <b>Classe abstraite</b>
+  Pawn et King redéfinissent
+  getPossibleMoves() et getCaptures()
+  selon leurs règles propres.
+end note
+
+note right of GameRules
+  <b>Toutes méthodes statiques.</b>
+  Prise obligatoire + maximale.
+  chercherCaptures() est récursive.
+end note
+
+note right of AppController
+  <b>Routeur central</b>
+  Charge les FXML, injecte this
+  dans chaque controller.
+end note
+
+note bottom of DatabaseManager
+  <b>Connexion statique partagée.</b>
+  Credentials lus depuis config.properties.
+end note
+
+note as SkeletonNote
+  <b>À implémenter :</b>
+  Game, Player, HumanPlayer,
+  AIPlayer, MinimaxAI, MoveValidator,
+  GameController, LoginController,
+  EndGameController
+end note
+
+legend bottom
+  <back:#EBF5FB>   </back> Model   <back:#E8F8F5>   </back> IA   <back:#FEF9E7>   </back> Énumération
+  <back:#FDEDEC>   </back> View    <back:#E9F7EF>   </back> Controller   <back:#F4ECF7>   </back> Persistence
+  ──▷ Héritage      ◆── Composition      ┄┄▷ Dépendance      ──> Association
+endlegend
+
+@enduml

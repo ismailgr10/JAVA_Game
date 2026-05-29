@@ -2,7 +2,7 @@
 
 ' ============================================================
 '  JEU DE DAMES — DIAGRAMME 2/2 : VIEW + CONTROLLER + PERSISTENCE
-'  Architecture : JavaFX 21 + Scene Builder (FXML)
+'  Architecture : JavaFX + Scene Builder (FXML)
 ' ============================================================
 
 skinparam linetype ortho
@@ -30,15 +30,9 @@ skinparam class {
     BorderColor<<fxml>>           #D4AC0D
 }
 
-title <size:17><b>Jeu de Dames — Diagramme de Classes (2/2)</b></size>\n<size:11>Couches VIEW, CONTROLLER et PERSISTENCE — JavaFX 21 + FXML</size>\n
+title <size:17><b>Jeu de Dames — Diagramme de Classes (2/2)</b></size>\n<size:11>Couches VIEW, CONTROLLER et PERSISTENCE — JavaFX + FXML</size>\n
 
-' --- Référence vers le Model (grisée, pour le contexte) ---
-class Game <<model>> {
-    + tryPlay(move) : boolean
-    + isOver() : boolean
-}
-
-' ============ VIEW (FXML — fichiers XML, pas des classes Java) ============
+' ============ VUES FXML ============
 note as FXMLNote
   <b>Vues FXML</b> (Scene Builder)
   Ces fichiers ne sont pas des classes Java.
@@ -51,19 +45,19 @@ note as FXMLNote
   • EndGameView.fxml   → EndGameController
 end note
 
-' --- Seule vraie classe View Java (plateau dynamique, pas de FXML) ---
+' ============ VIEW ============
 class BoardView <<view>> {
-    - {static} CELL_SIZE : int = 70
-    - cells : Rectangle[][]
-    - pieces : Circle[][]
+    - {static} CELL_SIZE : int = 72
+    - {static} PIECE_SIZE : int = 56
+    - cells : StackPane[][]
     - selectedPos : Position
+    - movable : Set<Position>
+    - dragFrom : Position
     --
-    + setBoard(board) : void
-    + setSelected(pos) : void
+    + refresh(board) : void
+    + highlightSelected(pos) : void
+    + highlightMoves(positions) : void
     + clearHighlights() : void
-    + setListener(l) : void
-    - initGrid() : void
-    - drawPieces(board) : void
 }
 
 interface BoardViewListener <<view>> {
@@ -75,34 +69,37 @@ interface BoardViewListener <<view>> {
 class AppController <<controller>> {
     - stage : Stage
     --
-    + start(stage) : void
     + showMenu() : void
     + showLogin(mode) : void
-    + showGame(p1, p2) : void
+    + showGame(player1Name, player2Name, mode) : void
     + showScores() : void
-    + showEndGame(result) : void
-    - loadFXML(fxml) : Scene
+    + showEndGame(winnerName) : void
 }
 
 class MenuController <<controller>> {
     - appController : AppController
     --
-    + onNewGameVsHuman() : void
-    + onNewGameVsAI() : void
-    + onShowScores() : void
-    + onQuit() : void
+    + setAppController(ac) : void
+    + onJouerHumain() : void
+    + onJouerIA() : void
+    + onScores() : void
+    + onQuitter() : void
 }
 
 class LoginController <<controller>> {
     - appController : AppController
+    - mode : String
     + usernameField : TextField
     + modeLabel : Label
     --
+    + setAppController(ac) : void
+    + setMode(mode) : void
     + onConfirm() : void
     + onBack() : void
 }
 
 class GameController <<controller>> {
+    - appController : AppController
     - game : Game
     - boardView : BoardView
     - selectedCell : Position
@@ -110,6 +107,8 @@ class GameController <<controller>> {
     + timerLabel : Label
     + captureCountLabel : Label
     --
+    + setAppController(ac) : void
+    + startGame(player1Name, player2Name, mode) : void
     + onCellClicked(pos) : void
     + onMoveDragged(from, to) : void
     + handleAITurn() : void
@@ -118,109 +117,120 @@ class GameController <<controller>> {
 }
 
 class ScoresController <<controller>> {
-    + scoresTable : TableView
+    - appController : AppController
+    - tableScores : TableView<ScoreEntry>
+    - colNom : TableColumn
+    - colParties : TableColumn
+    - colVictoires : TableColumn
+    - colPoints : TableColumn
     --
+    + setAppController(ac) : void
     + initialize() : void
-    + loadScores() : void
-    + onBack() : void
+    + onRetour() : void
 }
 
 class EndGameController <<controller>> {
     - appController : AppController
+    - winnerName : String
     + resultLabel : Label
     --
-    + setResult(state) : void
+    + setAppController(ac) : void
+    + setWinner(winnerName) : void
     + onPlayAgain() : void
     + onBackToMenu() : void
 }
 
 ' ============ PERSISTENCE ============
 class DatabaseManager <<persist>> {
-    - {static} instance : DatabaseManager
-    - connection : Connection
+    - {static} connexion : Connection
     --
-    + {static} getInstance() : DatabaseManager
-    + getConnection() : Connection
-    + close() : void
+    + {static} getConnexion() : Connection
+    + {static} fermerConnexion() : void
 }
+
 class PlayerDAO <<persist>> {
-    + save(player) : int
-    + findByUsername(name) : Player
-    + exists(name) : boolean
+    + {static} ajouterJoueur(nom) : void
+    + {static} joueurExiste(nom) : boolean
 }
+
 class GameDAO <<persist>> {
-    + save(game, winnerId, sec) : int
-    + findRecent(limit) : List
+    + {static} enregistrerPartie(joueur1, joueur2, gagnant, mode) : void
 }
+
 class ScoreDAO <<persist>> {
-    + updateScore(playerId, result) : void
-    + getTopScores(limit) : List<ScoreEntry>
+    + getTopScores() : List<ScoreEntry>
+    + mettreAJourScore(nom, victoire) : void
 }
+
 class ScoreEntry <<persist>> {
-    + username : String
-    + gamesPlayed : int
-    + gamesWon : int
-    + totalPoints : int
+    - nom : StringProperty
+    - partiesJouees : IntegerProperty
+    - victoires : IntegerProperty
+    - points : IntegerProperty
+    --
+    + getNom() : String
+    + getPartiesJouees() : int
+    + getVictoires() : int
+    + getPoints() : int
+    + nomProperty() : StringProperty
+    + partiesJoueesProperty() : IntegerProperty
+    + victoiresProperty() : IntegerProperty
+    + pointsProperty() : IntegerProperty
 }
 
 ' --- Relations : implémentation ---
 BoardViewListener <|.. GameController
 
 ' --- Relations : BoardView ---
-GameController --> BoardView     : rafraîchit
-BoardView      --> BoardViewListener : notifie
+GameController --> BoardView         : rafraîchit
+BoardView      --> BoardViewListener : notifie (listener injecté via constructeur)
 
-' --- Relations : Controller → AppController (navigation) ---
-MenuController   --> AppController : navigue
-LoginController  --> AppController : navigue
+' --- Relations : navigation via AppController ---
+MenuController    --> AppController : navigue
+LoginController   --> AppController : navigue
 EndGameController --> AppController : navigue
-
-' --- Relations : Controller utilise Model ---
-GameController ..> Game : délègue
+ScoresController  --> AppController : navigue
 
 ' --- Relations : Persistence ---
-PlayerDAO ..> DatabaseManager
-GameDAO   ..> DatabaseManager
-ScoreDAO  ..> DatabaseManager
-ScoreDAO  ..> ScoreEntry : produit
+PlayerDAO  ..> DatabaseManager : utilise
+GameDAO    ..> DatabaseManager : utilise
+ScoreDAO   ..> DatabaseManager : utilise
+ScoreDAO   ..> ScoreEntry      : produit
 
 ' --- Relations : Controller utilise Persistence ---
-GameController   ..> GameDAO  : enregistre
 ScoresController ..> ScoreDAO : interroge
 
 note top of GameController
-  <b>Pièce maîtresse du MVC</b>
-  Implémente BoardViewListener,
-  reçoit les clics et drag & drop,
-  délègue au Model, rafraîchit BoardView,
-  lance l'IA dans un Task<Move>.
+  <b>Squelette</b> — à implémenter.
+  Implémentera BoardViewListener,
+  recevra les clics/drag de BoardView,
+  déléguera à GameRules et Board.
 end note
 
 note top of AppController
-  <b>Routeur central (JavaFX)</b>
-  Utilise FXMLLoader pour charger
-  chaque .fxml et Stage.setScene()
-  pour la navigation entre écrans.
+  <b>Routeur central</b>
+  Charge les FXML via FXMLLoader,
+  injecte this dans chaque controller,
+  gère les transitions d'écran via Stage.setScene().
 end note
 
 note bottom of DatabaseManager
-  <b>Pattern Singleton</b>
-  Une seule connexion JDBC partagée
-  par tous les DAOs. Credentials lus
-  depuis config.properties.
+  <b>Connexion statique partagée</b>
+  (pattern Singleton sans getInstance).
+  Credentials lus depuis config.properties.
 end note
 
 note right of BoardView
   <b>Vue programmatique (pas FXML)</b>
   Extends GridPane. Affiche les cases
-  (Rectangle) et pions (Circle).
-  Drag & drop natif JavaFX.
-  Aucune règle métier ici !
+  (StackPane) et pions (ImageView).
+  Listener injecté via constructeur.
+  Aucune règle métier ici.
 end note
 
 legend bottom
   <back:#FDEDEC>   </back> View (JavaFX)   <back:#E9F7EF>   </back> Controller (@FXML)   <back:#F4ECF7>   </back> Persistence   <back:#EBF5FB>   </back> Model (rappel)   <back:#FEF9E7>   </back> Vues FXML (fichiers XML)
-  ──▷ Héritage   ┄┄▷ Implémentation / Dépendance   ◆── Composition   ◇── Agrégation
+  ──▷ Héritage   ┄┄▷ Implémentation / Dépendance   ──> Association   ◆── Composition
 endlegend
 
 @enduml

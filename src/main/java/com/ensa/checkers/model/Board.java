@@ -45,6 +45,10 @@ public class Board {
         grid[position.getRow()][position.getCol()] = null;
     }
 
+    public void setPiece(Position position, Piece piece) {
+        grid[position.getRow()][position.getCol()] = piece;
+    }
+
     public List<Piece> getAllPieces() {
         List<Piece> pieces = new ArrayList<>();
         for (int row = 0; row < SIZE; row++)
