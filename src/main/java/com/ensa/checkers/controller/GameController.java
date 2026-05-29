@@ -26,6 +26,7 @@ import javafx.scene.layout.StackPane;
 import javafx.util.Duration;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class GameController implements BoardViewListener {
@@ -123,12 +124,16 @@ public class GameController implements BoardViewListener {
             if (piece != null && piece.getColor() == game.getCurrentPlayer().getColor()) {
                 List<Move> moves = MoveValidator.getValidMovesFor(piece, game.getBoard());
                 if (!moves.isEmpty()) {
+                    boardView.stopCaptureWarning();
                     selectedPos           = pos;
                     validMovesForSelected = moves;
                     boardView.highlightSelected(pos);
                     boardView.highlightMoves(
                             moves.stream().map(Move::getTo).collect(Collectors.toList()));
                     boardView.refresh(game.getBoard());
+                } else {
+                    // Cette pièce n'a pas de coups légaux — signaler si capture obligatoire ailleurs
+                    triggerCaptureWarningIfNeeded();
                 }
             }
         } else {
@@ -138,6 +143,7 @@ public class GameController implements BoardViewListener {
                 // Switch selection to another friendly piece
                 List<Move> moves = MoveValidator.getValidMovesFor(piece, game.getBoard());
                 if (!moves.isEmpty()) {
+                    boardView.stopCaptureWarning();
                     selectedPos           = pos;
                     validMovesForSelected = moves;
                     boardView.highlightSelected(pos);
@@ -146,6 +152,7 @@ public class GameController implements BoardViewListener {
                     boardView.refresh(game.getBoard());
                 } else {
                     clearSelection();
+                    triggerCaptureWarningIfNeeded();
                 }
             } else {
                 // Try to move to clicked cell
@@ -174,6 +181,7 @@ public class GameController implements BoardViewListener {
     // ----------------------------------------------------------------  Move application
 
     private void applyHumanMove(Move move) {
+        boardView.stopCaptureWarning();
         PieceColor mover = game.getCurrentPlayer().getColor();
         int captured     = move.getCapturedPositions().size();
 
@@ -279,6 +287,21 @@ public class GameController implements BoardViewListener {
     }
 
     // ----------------------------------------------------------------  Helpers
+
+    /**
+     * Si des captures sont obligatoires pour le joueur courant, déclenche
+     * l'animation rouge sur les cases des pièces qui peuvent capturer.
+     */
+    private void triggerCaptureWarningIfNeeded() {
+        List<Move> mandatory = MoveValidator.getMandatoryCaptures(
+                game.getBoard(), game.getCurrentPlayer().getColor());
+        if (!mandatory.isEmpty()) {
+            Set<Position> captureFrom = mandatory.stream()
+                    .map(Move::getFrom)
+                    .collect(Collectors.toSet());
+            boardView.flashCapturePieces(captureFrom);
+        }
+    }
 
     private Move findLegalMove(Position from, Position to) {
         for (Move m : GameRules.getLegalMoves(game.getBoard(), game.getCurrentPlayer().getColor()))
