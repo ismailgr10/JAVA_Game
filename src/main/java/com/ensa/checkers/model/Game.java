@@ -4,10 +4,14 @@ import com.ensa.checkers.model.player.Player;
 
 public class Game {
 
+    /** Nombre de demi-coups sans capture ni promotion au-delà duquel la partie est nulle. */
+    private static final int DRAW_THRESHOLD = 40;
+
     private final Board    board;
     private final Player[] players;          // [0]=WHITE, [1]=BLACK
     private int            currentIndex = 0;
     private GameState      state        = GameState.EN_COURS;
+    private int            movesSinceProgress = 0;   // compteur pour la nulle
 
     public Game(Player whitePlayer, Player blackPlayer) {
         this.board   = new Board();
@@ -42,12 +46,18 @@ public class Game {
         if (state != GameState.EN_COURS) return false;
 
         PieceColor color = getCurrentPlayer().getColor();
-        if (!MoveValidator.isValidMove(board, move, color)) return false;
+        if (!GameRules.isValidMove(board, move, color)) return false;
 
         board.applyMove(move);
 
+        // Compteur de progression : remis à zéro sur capture ou promotion
+        if (move.isCapture() || move.isPromotion()) movesSinceProgress = 0;
+        else                                        movesSinceProgress++;
+
         if (GameRules.checkWinner(board, color)) {
             state = (color == PieceColor.WHITE) ? GameState.VICTOIRE_BLANC : GameState.VICTOIRE_NOIR;
+        } else if (movesSinceProgress >= DRAW_THRESHOLD) {
+            state = GameState.NUL;
         } else {
             currentIndex = 1 - currentIndex;
         }

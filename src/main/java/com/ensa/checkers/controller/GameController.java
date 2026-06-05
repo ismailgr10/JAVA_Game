@@ -4,7 +4,6 @@ import com.ensa.checkers.model.Board;
 import com.ensa.checkers.model.Game;
 import com.ensa.checkers.model.GameRules;
 import com.ensa.checkers.model.Move;
-import com.ensa.checkers.model.MoveValidator;
 import com.ensa.checkers.model.Piece;
 import com.ensa.checkers.model.PieceColor;
 import com.ensa.checkers.model.Position;
@@ -25,9 +24,10 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.util.Duration;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class GameController implements BoardViewListener {
 
@@ -44,8 +44,7 @@ public class GameController implements BoardViewListener {
     private String        mode;
 
     // Selection state
-    private Position   selectedPos;
-    private List<Move> validMovesForSelected;
+    private Position selectedPos;
 
     // Stats
     private int capturesWhite = 0;
@@ -122,14 +121,12 @@ public class GameController implements BoardViewListener {
         if (selectedPos == null) {
             // First click: try to select a piece
             if (piece != null && piece.getColor() == game.getCurrentPlayer().getColor()) {
-                List<Move> moves = MoveValidator.getValidMovesFor(piece, game.getBoard());
+                List<Move> moves = GameRules.getValidMovesFor(piece, game.getBoard());
                 if (!moves.isEmpty()) {
                     boardView.stopCaptureWarning();
-                    selectedPos           = pos;
-                    validMovesForSelected = moves;
+                    selectedPos = pos;
                     boardView.highlightSelected(pos);
-                    boardView.highlightMoves(
-                            moves.stream().map(Move::getTo).collect(Collectors.toList()));
+                    boardView.highlightMoves(destinationsOf(moves));
                     boardView.refresh(game.getBoard());
                 } else {
                     // Cette pièce n'a pas de coups légaux — signaler si capture obligatoire ailleurs
@@ -141,14 +138,12 @@ public class GameController implements BoardViewListener {
                 clearSelection();
             } else if (piece != null && piece.getColor() == game.getCurrentPlayer().getColor()) {
                 // Switch selection to another friendly piece
-                List<Move> moves = MoveValidator.getValidMovesFor(piece, game.getBoard());
+                List<Move> moves = GameRules.getValidMovesFor(piece, game.getBoard());
                 if (!moves.isEmpty()) {
                     boardView.stopCaptureWarning();
-                    selectedPos           = pos;
-                    validMovesForSelected = moves;
+                    selectedPos = pos;
                     boardView.highlightSelected(pos);
-                    boardView.highlightMoves(
-                            moves.stream().map(Move::getTo).collect(Collectors.toList()));
+                    boardView.highlightMoves(destinationsOf(moves));
                     boardView.refresh(game.getBoard());
                 } else {
                     clearSelection();
@@ -207,6 +202,7 @@ public class GameController implements BoardViewListener {
         abandonButton.setDisable(true);
         boardView.setDisable(true);
 
+        // L'IA réfléchit dans un Task (thread de fond) pour ne pas geler l'interface.
         Task<Move> task = new Task<>() {
             @Override protected Move call() { return ai.chooseMove(game); }
         };
@@ -293,14 +289,22 @@ public class GameController implements BoardViewListener {
      * l'animation rouge sur les cases des pièces qui peuvent capturer.
      */
     private void triggerCaptureWarningIfNeeded() {
-        List<Move> mandatory = MoveValidator.getMandatoryCaptures(
+        List<Move> mandatory = GameRules.getMandatoryCaptures(
                 game.getBoard(), game.getCurrentPlayer().getColor());
         if (!mandatory.isEmpty()) {
-            Set<Position> captureFrom = mandatory.stream()
-                    .map(Move::getFrom)
-                    .collect(Collectors.toSet());
+            Set<Position> captureFrom = new HashSet<>();
+            for (Move m : mandatory)
+                captureFrom.add(m.getFrom());
             boardView.flashCapturePieces(captureFrom);
         }
+    }
+
+    /** Renvoie la liste des cases d'arrivée d'une liste de coups. */
+    private List<Position> destinationsOf(List<Move> moves) {
+        List<Position> destinations = new ArrayList<>();
+        for (Move m : moves)
+            destinations.add(m.getTo());
+        return destinations;
     }
 
     private Move findLegalMove(Position from, Position to) {
@@ -310,8 +314,7 @@ public class GameController implements BoardViewListener {
     }
 
     private void clearSelection() {
-        selectedPos           = null;
-        validMovesForSelected = null;
+        selectedPos = null;
         boardView.clearHighlights();
         boardView.refresh(game.getBoard());
     }

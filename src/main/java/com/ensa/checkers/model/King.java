@@ -13,6 +13,8 @@ public class King extends Piece {
         super(color, position);
     }
 
+    /** Déplacements simples uniquement (cases vides sur les diagonales).
+     *  Les captures sont produites séparément par {@link #getCaptures}. */
     @Override
     public List<Move> getPossibleMoves(Board board) {
         List<Move> moves = new ArrayList<>();
@@ -21,46 +23,14 @@ public class King extends Piece {
 
         for (int dr : new int[]{-1, 1}) {
             for (int dc : new int[]{-1, 1}) {
-                scanDiagonal(board, moves, row, col, dr, dc);
+                int r = row + dr, c = col + dc;
+                while (Position.isValid(r, c) && board.getPieceAt(new Position(r, c)) == null) {
+                    moves.add(new Move(getPosition(), new Position(r, c)));
+                    r += dr; c += dc;
+                }
             }
         }
         return moves;
-    }
-
-    /** Parcourt une diagonale case par case et ajoute les déplacements / captures possibles. */
-    private void scanDiagonal(Board board, List<Move> moves, int row, int col, int dr, int dc) {
-        int r = row + dr, c = col + dc;
-
-        while (Position.isValid(r, c)) {
-            Piece occupant = board.getPieceAt(new Position(r, c));
-
-            if (occupant == null) {
-                // Case vide → déplacement simple
-                moves.add(new Move(getPosition(), new Position(r, c)));
-            } else {
-                if (occupant.getColor() != getColor()) {
-                    // Ennemi trouvé → ajouter toutes les cases d'atterrissage après lui
-                    addLandingsAfterEnemy(board, moves, r, c, dr, dc);
-                }
-                return; // Bloqué, on arrête le scan
-            }
-            r += dr; c += dc;
-        }
-    }
-
-    /** Ajoute les cases vides disponibles après un ennemi capturé. */
-    private void addLandingsAfterEnemy(Board board, List<Move> moves, int er, int ec, int dr, int dc) {
-        Position enemyPos = new Position(er, ec);
-        int lr = er + dr, lc = ec + dc;
-
-        while (Position.isValid(lr, lc)) {
-            Position land = new Position(lr, lc);
-            if (board.getPieceAt(land) != null) break;
-            Move capture = new Move(getPosition(), land);
-            capture.addCaptured(enemyPos);
-            moves.add(capture);
-            lr += dr; lc += dc;
-        }
     }
 
     @Override
