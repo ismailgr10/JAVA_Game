@@ -28,17 +28,59 @@ public class Board {
     }
 
     public void applyMove(Move move) {
+        applyMove(move, false);
+    }
+
+    /**
+     * Applique un coup et, si {@code recordUndo} est vrai, retourne un jeton
+     * permettant de l'annuler via {@link #undoMove(MoveUndo)}.
+     * Utilisé par l'IA / la génération de coups pour explorer sans copier le plateau.
+     */
+    public MoveUndo applyMove(Move move, boolean recordUndo) {
         Position from = move.getFrom();
         Position to   = move.getTo();
         Piece piece   = grid[from.getRow()][from.getCol()];
 
-        for (Position captured : move.getCapturedPositions())
+        List<Piece> capturedPieces = recordUndo ? new ArrayList<>() : null;
+        for (Position captured : move.getCapturedPositions()) {
+            if (recordUndo) capturedPieces.add(grid[captured.getRow()][captured.getCol()]);
             grid[captured.getRow()][captured.getCol()] = null;
+        }
 
         grid[from.getRow()][from.getCol()] = null;
         piece.setPosition(to);
         grid[to.getRow()][to.getCol()] = move.isPromotion()
             ? new King(piece.getColor(), to) : piece;
+
+        return recordUndo ? new MoveUndo(move, piece, capturedPieces) : null;
+    }
+
+    /** Annule un coup appliqué avec {@code recordUndo = true}, restaurant l'état exact. */
+    public void undoMove(MoveUndo u) {
+        Position from = u.move.getFrom();
+        Position to   = u.move.getTo();
+
+        grid[to.getRow()][to.getCol()] = null;
+        u.movedPiece.setPosition(from);            // remet le pion d'origine (annule la promotion)
+        grid[from.getRow()][from.getCol()] = u.movedPiece;
+
+        List<Position> caps = u.move.getCapturedPositions();
+        for (int i = 0; i < caps.size(); i++) {
+            Position c = caps.get(i);
+            grid[c.getRow()][c.getCol()] = u.capturedPieces.get(i);
+        }
+    }
+
+    /** Jeton d'annulation : pièce déplacée d'origine + pièces capturées (dans l'ordre). */
+    public static final class MoveUndo {
+        final Move move;
+        final Piece movedPiece;
+        final List<Piece> capturedPieces;
+        MoveUndo(Move move, Piece movedPiece, List<Piece> capturedPieces) {
+            this.move = move;
+            this.movedPiece = movedPiece;
+            this.capturedPieces = capturedPieces;
+        }
     }
 
     public void removePiece(Position position) {

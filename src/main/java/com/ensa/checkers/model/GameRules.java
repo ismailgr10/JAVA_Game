@@ -14,7 +14,8 @@ public class GameRules {
         List<Move> captures = new ArrayList<>();
         for (Piece p : board.getAllPieces())
             if (p.getColor() == color)
-                chercherCaptures(board, p, p.getPosition(), new ArrayList<>(), new HashSet<>(), captures);
+                chercherCaptures(board, p, p.getPosition(), p.getPosition(),
+                                 new ArrayList<>(), new HashSet<>(), captures);
 
         // 2. Si captures trouvées → garder uniquement celles qui prennent le maximum
         if (!captures.isEmpty()) {
@@ -31,23 +32,41 @@ public class GameRules {
         }
 
         // 3. Aucune capture → retourner les déplacements simples
+        //    (getPossibleMoves ne génère plus que des déplacements non-capturants)
         List<Move> simples = new ArrayList<>();
         for (Piece p : board.getAllPieces())
             if (p.getColor() == color)
-                for (Move m : p.getPossibleMoves(board))
-                    if (!m.isCapture())
-                        simples.add(m);
+                simples.addAll(p.getPossibleMoves(board));
         return simples;
+    }
+
+    /** True si `move` figure parmi les coups légaux de `color` (prise obligatoire incluse). */
+    public static boolean isValidMove(Board board, Move move, PieceColor color) {
+        for (Move legal : getLegalMoves(board, color))
+            if (legal.getFrom().equals(move.getFrom()) && legal.getTo().equals(move.getTo()))
+                return true;
+        return false;
+    }
+
+    /** Coups légaux pour une pièce donnée (respecte la prise obligatoire). */
+    public static List<Move> getValidMovesFor(Piece piece, Board board) {
+        List<Move> result = new ArrayList<>();
+        for (Move legal : getLegalMoves(board, piece.getColor()))
+            if (legal.getFrom().equals(piece.getPosition()))
+                result.add(legal);
+        return result;
+    }
+
+    /** Captures obligatoires pour `color`, ou liste vide si aucune. */
+    public static List<Move> getMandatoryCaptures(Board board, PieceColor color) {
+        List<Move> legal = getLegalMoves(board, color);
+        if (legal.isEmpty() || !legal.get(0).isCapture()) return new ArrayList<>();
+        return legal;
     }
 
     /** True si color a gagné : l'adversaire n'a plus aucun coup légal. */
     public static boolean checkWinner(Board board, PieceColor color) {
         return getLegalMoves(board, color.opposite()).isEmpty();
-    }
-
-    /** True si le pion atteint la ligne de promotion via ce coup. */
-    public static boolean shouldPromote(Piece piece, Move move) {
-        return move.isPromotion();
     }
 
     /** True si au moins une capture est disponible pour cette couleur. */
@@ -60,11 +79,12 @@ public class GameRules {
     }
 
     /**
-     * Construit récursivement toutes les chaînes de captures depuis `from`.
-     * À chaque étape : on capture → on simule le plateau → on recommence.
-     * Quand plus aucune capture n'est possible → on enregistre la chaîne.
+     * Construit récursivement toutes les chaînes de captures.
+     * `origin` = case de départ de la pièce (fixe), `from` = case courante dans la chaîne.
+     * À chaque étape : on capture → on avance sur le plateau → on recommence → on revient.
+     * Quand plus aucune capture n'est possible → on enregistre la chaîne (de `origin` à `from`).
      */
-    public static void chercherCaptures(Board board, Piece piece, Position from,
+    public static void chercherCaptures(Board board, Piece piece, Position origin, Position from,
                                         List<Position> capturees, Set<Position> visitees,
                                         List<Move> resultat) {
         List<int[]> prochaines = piece.getCaptures(board, from);
@@ -75,7 +95,7 @@ public class GameRules {
                 boolean promotion = piece.canPromote()
                     && ((piece.getColor() == PieceColor.WHITE && from.getRow() == 0)
                     ||  (piece.getColor() == PieceColor.BLACK && from.getRow() == 7));
-                Move coup = new Move(piece.getPosition(), from, promotion);
+                Move coup = new Move(origin, from, promotion);
                 for (Position pos : capturees)
                     coup.addCaptured(pos);
                 resultat.add(coup);
@@ -98,22 +118,24 @@ public class GameRules {
 
             // Promotion en cours de chaîne → on s'arrête (règle espagnole)
             if (promotion) {
-                Move coup = new Move(piece.getPosition(), arrivee, true);
+                Move coup = new Move(origin, arrivee, true);
                 for (Position pos : nouvellesCapturees)
                     coup.addCaptured(pos);
                 resultat.add(coup);
                 continue;
             }
 
-            // Simuler le plateau après cette capture pour continuer la chaîne
-            Board simule = board.copy();
+            // Avancer d'un pas sur le plateau, explorer la suite, puis revenir en arrière
+            // (apply/undo en place — évite de copier le plateau à chaque capture)
             Move pas = new Move(from, arrivee);
             pas.addCaptured(ennemi);
-            simule.applyMove(pas);
+            Board.MoveUndo undo = board.applyMove(pas, true);
 
             Set<Position> nouvellesVisitees = new HashSet<>(visitees);
             nouvellesVisitees.add(arrivee);
-            chercherCaptures(simule, piece, arrivee, nouvellesCapturees, nouvellesVisitees, resultat);
+            chercherCaptures(board, piece, origin, arrivee, nouvellesCapturees, nouvellesVisitees, resultat);
+
+            board.undoMove(undo);
         }
     }
 }
