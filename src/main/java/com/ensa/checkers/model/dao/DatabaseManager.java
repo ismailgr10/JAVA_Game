@@ -37,17 +37,4 @@ public class DatabaseManager {
 
         return connexion;
     }
-
-    /** Ferme la connexion à la base de données. */
-    public static void fermerConnexion() {
-        if (connexion != null) {
-            try {
-                connexion.close();
-                connexion = null;
-                System.out.println("Connexion fermée.");
-            } catch (Exception e) {
-                System.err.println("Erreur lors de la fermeture : " + e.getMessage());
-            }
-        }
-    }
 }

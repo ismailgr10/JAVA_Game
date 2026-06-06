@@ -10,95 +10,110 @@ import com.ensa.checkers.model.PieceColor;
 
 import java.util.List;
 
+/**
+ * Intelligence artificielle de l'adversaire, basée sur l'algorithme <b>Minimax</b>
+ * avec <b>élagage alpha-bêta</b>.
+ *
+ * Idée du Minimax : l'IA explore les coups possibles à l'avance, sur plusieurs tours.
+ * À son tour elle cherche à <i>maximiser</i> son score ; au tour de l'adversaire elle
+ * suppose qu'il jouera le pire coup pour elle, donc elle <i>minimise</i>. En remontant
+ * l'arbre des possibilités, elle choisit le coup menant à la meilleure situation.
+ *
+ * L'élagage alpha-bêta accélère la recherche : il abandonne les branches dont on sait
+ * déjà qu'elles ne seront pas choisies, ce qui évite des calculs inutiles.
+ *
+ * {@code PROFONDEUR} = profondeur de réflexion (nombre de demi-coups anticipés).
+ */
 public class MinimaxAI {
 
-    private static final int DEPTH = 4;
+    /** Profondeur de recherche : plus elle est grande, plus l'IA est forte mais lente. */
+    private static final int PROFONDEUR = 4;
 
-    /** Entry point: returns the best move for the current player in the given game. */
-    public Move findBestMove(Game game) {
-        PieceColor color = game.getCurrentPlayer().getColor();
-        List<Move> moves = GameRules.getLegalMoves(game.getBoard(), color);
-        if (moves.isEmpty()) return null;
+    /** Point d'entrée : retourne le meilleur coup pour le joueur courant de la partie. */
+    public Move trouverMeilleurCoup(Game partie) {
+        PieceColor couleur = partie.getJoueurCourant().getCouleur();
+        List<Move> coups = GameRules.getCoupsLegaux(partie.getPlateau(), couleur);
+        if (coups.isEmpty()) return null;
 
-        // Un seul plateau de travail (copie privée à ce thread), exploré en apply/undo.
-        Board board = game.getBoard().copy();
+        // Un seul plateau de travail (copie privée à ce thread), exploré en appliquer/annuler.
+        Board plateau = partie.getPlateau().copier();
 
-        Move best      = null;
-        int  bestScore = Integer.MIN_VALUE;
+        Move meilleur     = null;
+        int  meilleurScore = Integer.MIN_VALUE;
 
-        for (Move move : moves) {
-            Board.MoveUndo undo = board.applyMove(move, true);
-            int score = minimax(board, DEPTH - 1, Integer.MIN_VALUE, Integer.MAX_VALUE, false, color);
-            board.undoMove(undo);
-            if (score > bestScore) {
-                bestScore = score;
-                best      = move;
+        for (Move coup : coups) {
+            Board.MoveUndo annulation = plateau.appliquerCoup(coup, true);
+            int score = minimax(plateau, PROFONDEUR - 1, Integer.MIN_VALUE, Integer.MAX_VALUE, false, couleur);
+            plateau.annulerCoup(annulation);
+            if (score > meilleurScore) {
+                meilleurScore = score;
+                meilleur      = coup;
             }
         }
-        return best;
+        return meilleur;
     }
 
     /**
-     * Minimax avec élagage alpha-bêta, exploré en place (apply/undo).
-     * maximizing=true  → tour de l'IA (maximise le score).
-     * maximizing=false → tour de l'adversaire (minimise le score).
+     * Minimax avec élagage alpha-bêta, exploré en place (appliquer/annuler).
+     * maximise=true  → tour de l'IA (on maximise le score).
+     * maximise=false → tour de l'adversaire (on minimise le score).
      */
-    private int minimax(Board board, int depth, int alpha, int beta,
-                        boolean maximizing, PieceColor aiColor) {
+    private int minimax(Board plateau, int profondeur, int alpha, int beta,
+                        boolean maximise, PieceColor couleurIA) {
 
-        PieceColor current = maximizing ? aiColor : aiColor.opposite();
-        List<Move> moves   = GameRules.getLegalMoves(board, current);
+        PieceColor courante = maximise ? couleurIA : couleurIA.opposee();
+        List<Move> coups    = GameRules.getCoupsLegaux(plateau, courante);
 
-        if (depth == 0 || moves.isEmpty())
-            return evaluate(board, aiColor);
+        if (profondeur == 0 || coups.isEmpty())
+            return evaluer(plateau, couleurIA);
 
-        if (maximizing) {
+        if (maximise) {
             int max = Integer.MIN_VALUE;
-            for (Move m : moves) {
-                Board.MoveUndo undo = board.applyMove(m, true);
-                int val = minimax(board, depth - 1, alpha, beta, false, aiColor);
-                board.undoMove(undo);
+            for (Move m : coups) {
+                Board.MoveUndo annulation = plateau.appliquerCoup(m, true);
+                int val = minimax(plateau, profondeur - 1, alpha, beta, false, couleurIA);
+                plateau.annulerCoup(annulation);
                 if (val > max)   max   = val;
                 if (max > alpha) alpha = max;
-                if (beta <= alpha) break;   // beta cut-off
+                if (beta <= alpha) break;   // coupure beta
             }
             return max;
         } else {
             int min = Integer.MAX_VALUE;
-            for (Move m : moves) {
-                Board.MoveUndo undo = board.applyMove(m, true);
-                int val = minimax(board, depth - 1, alpha, beta, true, aiColor);
-                board.undoMove(undo);
+            for (Move m : coups) {
+                Board.MoveUndo annulation = plateau.appliquerCoup(m, true);
+                int val = minimax(plateau, profondeur - 1, alpha, beta, true, couleurIA);
+                plateau.annulerCoup(annulation);
                 if (val < min)  min  = val;
                 if (min < beta) beta = min;
-                if (beta <= alpha) break;   // alpha cut-off
+                if (beta <= alpha) break;   // coupure alpha
             }
             return min;
         }
     }
 
     /**
-     * Évalue un plateau pour `color`. Score positif = favorable à `color`.
+     * Évalue un plateau pour `couleur`. Score positif = favorable à `couleur`.
      * Combine le matériel (dame=30, pion=10), l'avancement des pions vers la
      * promotion (0..7) et un léger bonus de contrôle du centre.
      */
-    private static int evaluate(Board board, PieceColor color) {
+    private static int evaluer(Board plateau, PieceColor couleur) {
         int score = 0;
 
-        for (Piece p : board.getAllPieces()) {
-            boolean isKing = p instanceof King;
-            int v = isKing ? 30 : 10;
+        for (Piece p : plateau.getToutesLesPieces()) {
+            boolean estDame = p instanceof King;
+            int v = estDame ? 30 : 10;
 
-            if (!isKing) {
-                int row = p.getPosition().getRow();
+            if (!estDame) {
+                int ligne = p.getPosition().getLigne();
                 // distance parcourue vers la rangée de promotion (blanc monte, noir descend)
-                v += (p.getColor() == PieceColor.WHITE) ? (7 - row) : row;
+                v += (p.getCouleur() == PieceColor.WHITE) ? (7 - ligne) : ligne;
             }
 
-            int col = p.getPosition().getCol();
-            if (col >= 2 && col <= 5) v += 1;   // contrôle des colonnes centrales
+            int colonne = p.getPosition().getColonne();
+            if (colonne >= 2 && colonne <= 5) v += 1;   // contrôle des colonnes centrales
 
-            score += (p.getColor() == color) ? v : -v;
+            score += (p.getCouleur() == couleur) ? v : -v;
         }
         return score;
     }

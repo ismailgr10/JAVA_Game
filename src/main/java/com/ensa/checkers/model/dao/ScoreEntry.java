@@ -5,6 +5,13 @@ import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 
+/**
+ * Représente une ligne du tableau des scores (nom, parties jouées, victoires, points).
+ *
+ * On utilise des « Property » JavaFX au lieu de simples champs : c'est ce que le
+ * {@code TableView} de l'écran des scores sait lire automatiquement pour remplir
+ * et rafraîchir chaque colonne.
+ */
 public class ScoreEntry {
 
     private final StringProperty  nom;

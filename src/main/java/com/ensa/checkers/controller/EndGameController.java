@@ -3,30 +3,36 @@ package com.ensa.checkers.controller;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 
+/**
+ * Contrôleur de l'écran de fin de partie (EndGameView.fxml).
+ *
+ * Affiche le résultat (gagnant ou match nul) et propose de rejouer ou de revenir au menu.
+ */
 public class EndGameController {
 
-    @FXML private Label resultLabel;
+    @FXML private Label labelResultat;
 
     private AppController appController;
 
-    public void setAppController(AppController appController) {
+    public void definirAppController(AppController appController) {
         this.appController = appController;
     }
 
-    public void setWinner(String winnerName) {
-        if ("NUL".equals(winnerName))
-            resultLabel.setText("Match nul !");
+    /** Affiche le message de fin selon le résultat reçu du GameController. */
+    public void definirGagnant(String nomGagnant) {
+        if ("NUL".equals(nomGagnant))
+            labelResultat.setText("🤝  Match nul !");
         else
-            resultLabel.setText("🏆  " + winnerName + " a gagné !");
+            labelResultat.setText("🏆  " + nomGagnant + " a gagné !");
     }
 
     @FXML
-    private void onPlayAgain() {
-        appController.showMenu();
+    private void rejouer() {
+        appController.afficherMenu();
     }
 
     @FXML
-    private void onBackToMenu() {
-        appController.showMenu();
+    private void retournerAuMenu() {
+        appController.afficherMenu();
     }
 }

@@ -3,31 +3,37 @@ package com.ensa.checkers.controller;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 
+/**
+ * Contrôleur du menu principal (MenuView.fxml).
+ *
+ * Chaque bouton du menu appelle une méthode annotée @FXML, qui demande à
+ * {@link AppController} de naviguer vers l'écran correspondant.
+ */
 public class MenuController {
 
     private AppController appController;
 
-    public void setAppController(AppController appController) {
+    public void definirAppController(AppController appController) {
         this.appController = appController;
     }
 
     @FXML
-    private void onJouerHumain() {
-        appController.showLogin("HUMAIN_VS_HUMAIN");
+    private void jouerContreHumain() {
+        appController.afficherConfig("HUMAIN_VS_HUMAIN");
     }
 
     @FXML
-    private void onJouerIA() {
-        appController.showLogin("HUMAIN_VS_IA");
+    private void jouerContreIA() {
+        appController.afficherConfig("HUMAIN_VS_IA");
     }
 
     @FXML
-    private void onScores() {
-        appController.showScores();
+    private void afficherScores() {
+        appController.afficherScores();
     }
 
     @FXML
-    private void onQuitter() {
+    private void quitter() {
         Platform.exit();
     }
 }
