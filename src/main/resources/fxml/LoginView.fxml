@@ -36,24 +36,24 @@
 
         <!-- Nom du joueur -->
         <Label text="NOM DU JOUEUR" styleClass="form-label"/>
-        <TextField fx:id="nameField"
+        <TextField fx:id="champNom"
                    promptText="Entrez votre nom..."
                    styleClass="text-field"/>
 
         <!-- Nom du joueur 2 (affiché uniquement en mode Humain vs Humain) -->
-        <VBox fx:id="player2Box" spacing="14.0" visible="false" managed="false">
+        <VBox fx:id="boiteJoueur2" spacing="14.0" visible="false" managed="false">
             <Label text="NOM DU JOUEUR 2" styleClass="form-label"/>
-            <TextField fx:id="name2Field"
+            <TextField fx:id="champNom2"
                        promptText="Entrez le nom du joueur 2..."
                        styleClass="text-field"/>
         </VBox>
 
         <!-- Choix du mode -->
         <Label text="CHOIX DU MODE" styleClass="form-label"/>
-        <ComboBox fx:id="modeCombo" maxWidth="Infinity" styleClass="combo-box"/>
+        <ComboBox fx:id="listeMode" maxWidth="Infinity" styleClass="combo-box"/>
 
         <!-- Message d'erreur -->
-        <Label fx:id="errorLabel"
+        <Label fx:id="labelErreur"
                style="-fx-text-fill: #c0392b; -fx-font-size: 12px; -fx-font-weight: bold;"
                text="" visible="false" managed="false"/>
 
@@ -63,7 +63,7 @@
         <Button text="COMMENCER LA PARTIE"
                 styleClass="button-primary"
                 maxWidth="Infinity"
-                onAction="#onConfirm"/>
+                onAction="#confirmer"/>
     </VBox>
 
 </StackPane>

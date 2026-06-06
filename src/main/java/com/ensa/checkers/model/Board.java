@@ -3,115 +3,132 @@ package com.ensa.checkers.model;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Plateau de jeu : une grille 8x8 qui contient les pièces.
+ *
+ * Chaque case de la grille contient soit une {@link Piece}, soit null (case vide).
+ * En plus de placer/déplacer les pièces, cette classe sait :
+ *   - appliquer un coup (et éventuellement l'annuler, pour que l'IA explore vite) ;
+ *   - se copier (utile pour simuler des coups sans toucher au vrai plateau).
+ */
 public class Board {
-    private static final int SIZE = 8;
-    private Piece[][] grid;
+
+    private static final int TAILLE = 8;
+    private Piece[][] grille;   // grille[ligne][colonne] : la pièce sur la case, ou null
 
     public Board() {
-        grid = new Piece[SIZE][SIZE];
+        grille = new Piece[TAILLE][TAILLE];
     }
 
-    public void initialize() {
-        for (int row = 0; row < 3; row++)
-            for (int col = 0; col < SIZE; col++)
-                if ((row + col) % 2 == 1)
-                    grid[row][col] = new Pawn(PieceColor.BLACK, new Position(row, col));
+    /** Place les pièces dans leur position de départ : Noirs en haut, Blancs en bas. */
+    public void initialiser() {
+        // Les 3 premières rangées (en haut) reçoivent les pions noirs...
+        for (int ligne = 0; ligne < 3; ligne++)
+            for (int colonne = 0; colonne < TAILLE; colonne++)
+                if ((ligne + colonne) % 2 == 1)                 // uniquement sur les cases sombres
+                    grille[ligne][colonne] = new Pawn(PieceColor.BLACK, new Position(ligne, colonne));
 
-        for (int row = 5; row < SIZE; row++)
-            for (int col = 0; col < SIZE; col++)
-                if ((row + col) % 2 == 1)
-                    grid[row][col] = new Pawn(PieceColor.WHITE, new Position(row, col));
+        // ... et les 3 dernières rangées (en bas) les pions blancs.
+        for (int ligne = 5; ligne < TAILLE; ligne++)
+            for (int colonne = 0; colonne < TAILLE; colonne++)
+                if ((ligne + colonne) % 2 == 1)
+                    grille[ligne][colonne] = new Pawn(PieceColor.WHITE, new Position(ligne, colonne));
     }
 
-    public Piece getPieceAt(Position position) {
-        return grid[position.getRow()][position.getCol()];
+    /** Retourne la pièce présente sur une case (ou null si la case est vide). */
+    public Piece getPiece(Position position) {
+        return grille[position.getLigne()][position.getColonne()];
     }
 
-    public void applyMove(Move move) {
-        applyMove(move, false);
+    /** Applique un coup de façon définitive (sans possibilité d'annulation). */
+    public void appliquerCoup(Move coup) {
+        appliquerCoup(coup, false);
     }
 
     /**
-     * Applique un coup et, si {@code recordUndo} est vrai, retourne un jeton
-     * permettant de l'annuler via {@link #undoMove(MoveUndo)}.
-     * Utilisé par l'IA / la génération de coups pour explorer sans copier le plateau.
+     * Applique un coup. Si {@code memoriser} est vrai, retourne un jeton qui permet
+     * de revenir exactement en arrière via {@link #annulerCoup(MoveUndo)}.
+     *
+     * Ce mécanisme « jouer / annuler » est utilisé par l'IA et la génération des coups
+     * pour explorer des milliers de positions sans recopier le plateau à chaque fois.
      */
-    public MoveUndo applyMove(Move move, boolean recordUndo) {
-        Position from = move.getFrom();
-        Position to   = move.getTo();
-        Piece piece   = grid[from.getRow()][from.getCol()];
+    public MoveUndo appliquerCoup(Move coup, boolean memoriser) {
+        Position depart  = coup.getDepart();
+        Position arrivee = coup.getArrivee();
+        Piece piece      = grille[depart.getLigne()][depart.getColonne()];
 
-        List<Piece> capturedPieces = recordUndo ? new ArrayList<>() : null;
-        for (Position captured : move.getCapturedPositions()) {
-            if (recordUndo) capturedPieces.add(grid[captured.getRow()][captured.getCol()]);
-            grid[captured.getRow()][captured.getCol()] = null;
+        // 1. On retire les pièces capturées (en les mémorisant si on veut pouvoir annuler)
+        List<Piece> piecesCapturees = memoriser ? new ArrayList<>() : null;
+        for (Position capturee : coup.getPositionsCapturees()) {
+            if (memoriser) piecesCapturees.add(grille[capturee.getLigne()][capturee.getColonne()]);
+            grille[capturee.getLigne()][capturee.getColonne()] = null;
         }
 
-        grid[from.getRow()][from.getCol()] = null;
-        piece.setPosition(to);
-        grid[to.getRow()][to.getCol()] = move.isPromotion()
-            ? new King(piece.getColor(), to) : piece;
+        // 2. On déplace la pièce ; si le coup promeut, une dame remplace le pion à l'arrivée
+        grille[depart.getLigne()][depart.getColonne()] = null;
+        piece.setPosition(arrivee);
+        grille[arrivee.getLigne()][arrivee.getColonne()] = coup.estPromotion()
+            ? new King(piece.getCouleur(), arrivee) : piece;
 
-        return recordUndo ? new MoveUndo(move, piece, capturedPieces) : null;
+        return memoriser ? new MoveUndo(coup, piece, piecesCapturees) : null;
     }
 
-    /** Annule un coup appliqué avec {@code recordUndo = true}, restaurant l'état exact. */
-    public void undoMove(MoveUndo u) {
-        Position from = u.move.getFrom();
-        Position to   = u.move.getTo();
+    /** Annule un coup appliqué avec {@code memoriser = true} et restaure l'état exact d'avant. */
+    public void annulerCoup(MoveUndo u) {
+        Position depart  = u.coup.getDepart();
+        Position arrivee = u.coup.getArrivee();
 
-        grid[to.getRow()][to.getCol()] = null;
-        u.movedPiece.setPosition(from);            // remet le pion d'origine (annule la promotion)
-        grid[from.getRow()][from.getCol()] = u.movedPiece;
+        // On remet la pièce d'origine sur sa case de départ (ce qui annule aussi une promotion)
+        grille[arrivee.getLigne()][arrivee.getColonne()] = null;
+        u.pieceDeplacee.setPosition(depart);
+        grille[depart.getLigne()][depart.getColonne()] = u.pieceDeplacee;
 
-        List<Position> caps = u.move.getCapturedPositions();
-        for (int i = 0; i < caps.size(); i++) {
-            Position c = caps.get(i);
-            grid[c.getRow()][c.getCol()] = u.capturedPieces.get(i);
+        // On replace chaque pièce capturée à sa place
+        List<Position> capturees = u.coup.getPositionsCapturees();
+        for (int i = 0; i < capturees.size(); i++) {
+            Position c = capturees.get(i);
+            grille[c.getLigne()][c.getColonne()] = u.piecesCapturees.get(i);
         }
     }
 
-    /** Jeton d'annulation : pièce déplacée d'origine + pièces capturées (dans l'ordre). */
+    /**
+     * Jeton d'annulation : mémorise ce qu'il faut pour remettre le plateau comme avant
+     * (la pièce déplacée d'origine et les pièces capturées, dans l'ordre).
+     */
     public static final class MoveUndo {
-        final Move move;
-        final Piece movedPiece;
-        final List<Piece> capturedPieces;
-        MoveUndo(Move move, Piece movedPiece, List<Piece> capturedPieces) {
-            this.move = move;
-            this.movedPiece = movedPiece;
-            this.capturedPieces = capturedPieces;
+        final Move coup;
+        final Piece pieceDeplacee;
+        final List<Piece> piecesCapturees;
+        MoveUndo(Move coup, Piece pieceDeplacee, List<Piece> piecesCapturees) {
+            this.coup = coup;
+            this.pieceDeplacee = pieceDeplacee;
+            this.piecesCapturees = piecesCapturees;
         }
     }
 
-    public void removePiece(Position position) {
-        grid[position.getRow()][position.getCol()] = null;
-    }
-
-    public void setPiece(Position position, Piece piece) {
-        grid[position.getRow()][position.getCol()] = piece;
-    }
-
-    public List<Piece> getAllPieces() {
+    /** Retourne la liste de toutes les pièces encore présentes sur le plateau. */
+    public List<Piece> getToutesLesPieces() {
         List<Piece> pieces = new ArrayList<>();
-        for (int row = 0; row < SIZE; row++)
-            for (int col = 0; col < SIZE; col++)
-                if (grid[row][col] != null)
-                    pieces.add(grid[row][col]);
+        for (int ligne = 0; ligne < TAILLE; ligne++)
+            for (int colonne = 0; colonne < TAILLE; colonne++)
+                if (grille[ligne][colonne] != null)
+                    pieces.add(grille[ligne][colonne]);
         return pieces;
     }
 
-    public Board copy() {
-        Board copy = new Board();
-        for (int row = 0; row < SIZE; row++)
-            for (int col = 0; col < SIZE; col++) {
-                Piece piece = grid[row][col];
+    /** Crée une copie indépendante du plateau (pour simuler des coups sans modifier l'original). */
+    public Board copier() {
+        Board copie = new Board();
+        for (int ligne = 0; ligne < TAILLE; ligne++)
+            for (int colonne = 0; colonne < TAILLE; colonne++) {
+                Piece piece = grille[ligne][colonne];
                 if (piece != null) {
-                    Position pos = new Position(row, col);
-                    copy.grid[row][col] = (piece instanceof King)
-                        ? new King(piece.getColor(), pos)
-                        : new Pawn(piece.getColor(), pos);
+                    Position pos = new Position(ligne, colonne);
+                    copie.grille[ligne][colonne] = (piece instanceof King)
+                        ? new King(piece.getCouleur(), pos)
+                        : new Pawn(piece.getCouleur(), pos);
                 }
             }
-        return copy;
+        return copie;
     }
 }

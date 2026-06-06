@@ -2,64 +2,75 @@ package com.ensa.checkers.model;
 
 import com.ensa.checkers.model.player.Player;
 
+/**
+ * Orchestrateur d'une partie : fait le lien entre le plateau, les deux joueurs
+ * et les règles du jeu.
+ *
+ * C'est ici qu'on garde l'état courant (qui doit jouer, partie finie ou non,
+ * gagnant éventuel) et qu'on applique un coup via {@link #jouerCoup(Move)} après
+ * avoir vérifié sa validité avec {@link GameRules}.
+ */
 public class Game {
 
-    /** Nombre de demi-coups sans capture ni promotion au-delà duquel la partie est nulle. */
-    private static final int DRAW_THRESHOLD = 40;
+    /** Nombre de demi-coups sans capture ni promotion au-delà duquel la partie est déclarée nulle. */
+    private static final int SEUIL_NULLE = 40;
 
-    private final Board    board;
-    private final Player[] players;          // [0]=WHITE, [1]=BLACK
-    private int            currentIndex = 0;
-    private GameState      state        = GameState.EN_COURS;
-    private int            movesSinceProgress = 0;   // compteur pour la nulle
+    private final Board    plateau;                       // le plateau de la partie
+    private final Player[] joueurs;                       // [0] = Blancs, [1] = Noirs
+    private int            indexCourant = 0;              // index du joueur dont c'est le tour
+    private GameState      etat         = GameState.EN_COURS;
+    private int            coupsSansProgres = 0;          // coups d'affilée sans capture ni promotion
 
-    public Game(Player whitePlayer, Player blackPlayer) {
-        this.board   = new Board();
-        this.board.initialize();
-        this.players = new Player[]{whitePlayer, blackPlayer};
+    /** Crée une partie : prépare le plateau et fixe l'ordre des joueurs (Blancs puis Noirs). */
+    public Game(Player joueurBlanc, Player joueurNoir) {
+        this.plateau = new Board();
+        this.plateau.initialiser();
+        this.joueurs = new Player[]{joueurBlanc, joueurNoir};
     }
 
-    // ----------------------------------------------------------------
+    // ----------------------------------------------------------------  Accès à l'état
 
-    public Player getCurrentPlayer() { return players[currentIndex]; }
-    public Player getPlayer(int i)   { return players[i]; }
-    public Board  getBoard()         { return board; }
-    public GameState getState()      { return state; }
-    public boolean isOver()          { return state != GameState.EN_COURS; }
+    public Player getJoueurCourant() { return joueurs[indexCourant]; }
+    public Player getJoueur(int i)   { return joueurs[i]; }
+    public Board  getPlateau()       { return plateau; }
+    public boolean estTerminee()     { return etat != GameState.EN_COURS; }
 
-    /** Returns the winner, or null if the game is a draw / still in progress. */
-    public Player getWinner() {
-        return switch (state) {
-            case VICTOIRE_BLANC -> players[0];
-            case VICTOIRE_NOIR  -> players[1];
-            default             -> null;
-        };
+    /** Retourne le gagnant, ou null si la partie est nulle ou encore en cours. */
+    public Player getGagnant() {
+        if (etat == GameState.VICTOIRE_BLANC) return joueurs[0];
+        if (etat == GameState.VICTOIRE_NOIR)  return joueurs[1];
+        return null;
     }
 
-    // ----------------------------------------------------------------
+    // ----------------------------------------------------------------  Jouer un coup
 
     /**
-     * Attempts to apply a move for the current player.
-     * Returns true if the move was legal and applied, false otherwise.
+     * Tente de jouer le coup demandé pour le joueur courant.
+     * Retourne true si le coup était légal et a été appliqué, false sinon.
+     *
+     * Étapes : vérifier la validité → appliquer sur le plateau → mettre à jour
+     * le compteur de nulle → déterminer si la partie est gagnée / nulle, sinon
+     * passer la main à l'autre joueur.
      */
-    public boolean tryPlay(Move move) {
-        if (state != GameState.EN_COURS) return false;
+    public boolean jouerCoup(Move coup) {
+        if (etat != GameState.EN_COURS) return false;
 
-        PieceColor color = getCurrentPlayer().getColor();
-        if (!GameRules.isValidMove(board, move, color)) return false;
+        PieceColor couleur = getJoueurCourant().getCouleur();
+        if (!GameRules.estCoupValide(plateau, coup, couleur)) return false;
 
-        board.applyMove(move);
+        plateau.appliquerCoup(coup);
 
-        // Compteur de progression : remis à zéro sur capture ou promotion
-        if (move.isCapture() || move.isPromotion()) movesSinceProgress = 0;
-        else                                        movesSinceProgress++;
+        // Un coup « utile » (capture ou promotion) relance le compteur ; sinon il avance vers la nulle
+        if (coup.estCapture() || coup.estPromotion()) coupsSansProgres = 0;
+        else                                          coupsSansProgres++;
 
-        if (GameRules.checkWinner(board, color)) {
-            state = (color == PieceColor.WHITE) ? GameState.VICTOIRE_BLANC : GameState.VICTOIRE_NOIR;
-        } else if (movesSinceProgress >= DRAW_THRESHOLD) {
-            state = GameState.NUL;
+        if (GameRules.aGagne(plateau, couleur)) {
+            // L'adversaire n'a plus aucun coup légal → le joueur courant gagne
+            etat = (couleur == PieceColor.WHITE) ? GameState.VICTOIRE_BLANC : GameState.VICTOIRE_NOIR;
+        } else if (coupsSansProgres >= SEUIL_NULLE) {
+            etat = GameState.NUL;
         } else {
-            currentIndex = 1 - currentIndex;
+            indexCourant = 1 - indexCourant;   // au tour de l'autre joueur (0 ↔ 1)
         }
         return true;
     }

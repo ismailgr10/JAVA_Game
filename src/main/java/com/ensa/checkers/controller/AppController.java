@@ -6,81 +6,82 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.net.URL;
 
 /**
  * Routeur central de l'application.
- * Toutes les navigations passent par ici — aucun controller ne connaît un autre controller.
- * Chaque controller reçoit une référence à AppController via setAppController().
+ * Toutes les navigations passent par ici — aucun contrôleur ne connaît un autre contrôleur.
+ * Chaque contrôleur reçoit une référence à AppController via definirAppController().
  */
 public class AppController {
 
-    private final Stage stage;
+    private final Stage fenetre;
 
     private static final String CSS      = "/css/style.css";
     private static final String MENU     = "/fxml/MenuView.fxml";
-    private static final String LOGIN    = "/fxml/LoginView.fxml";
-    private static final String GAME     = "/fxml/GameView.fxml";
+    private static final String CONFIG   = "/fxml/LoginView.fxml";
+    private static final String PARTIE   = "/fxml/GameView.fxml";
     private static final String SCORES   = "/fxml/ScoresView.fxml";
-    private static final String END_GAME = "/fxml/EndGameView.fxml";
+    private static final String FIN      = "/fxml/EndGameView.fxml";
 
-    public AppController(Stage stage) {
-        this.stage = stage;
-        stage.setTitle("Jeu de Dames");
-        stage.setResizable(false);
+    public AppController(Stage fenetre) {
+        this.fenetre = fenetre;
+        fenetre.setTitle("Jeu de Dames");
+        fenetre.setResizable(false);
     }
 
     /* ------------------------------------------------------------------ */
 
-    public void showMenu() {
-        loadView(MENU, 730, 560);
+    public void afficherMenu() {
+        chargerVue(MENU, 730, 560);
     }
 
-    public void showScores() {
-        loadView(SCORES, 620, 620);
+    public void afficherScores() {
+        chargerVue(SCORES, 620, 620);
     }
 
-    /** Appelée par MenuController — navigue vers l'écran de configuration (Taha). */
-    public void showLogin(String mode) {
-        FXMLLoader loader = buildLoader(LOGIN);
+    /** Navigue vers l'écran de configuration (saisie des noms + choix du mode). */
+    public void afficherConfig(String mode) {
+        FXMLLoader loader = construireLoader(CONFIG);
         if (loader == null) return;
         try {
-            Parent root = loader.load();
-            LoginController controller = loader.getController();
-            controller.setAppController(this);
-            controller.setMode(mode);
-            applyScene(root, 620, 520);
+            Parent racine = loader.load();
+            LoginController controleur = loader.getController();
+            controleur.definirAppController(this);
+            controleur.definirMode(mode);
+            appliquerScene(racine, 620, 520);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    /** Appelée par LoginController (Taha) une fois les joueurs configurés. */
-    public void showGame(String player1Name, String player2Name, String mode) {
-        FXMLLoader loader = buildLoader(GAME);
+    /** Lance la partie une fois les joueurs configurés. */
+    public void afficherPartie(String nomJoueur1, String nomJoueur2, String mode) {
+        FXMLLoader loader = construireLoader(PARTIE);
         if (loader == null) return;
 
         try {
-            Parent root = loader.load();
-            GameController controller = loader.getController();
-            controller.setAppController(this);
-            controller.startGame(player1Name, player2Name, mode);
-            applyScene(root, 820, 640);
+            Parent racine = loader.load();
+            GameController controleur = loader.getController();
+            controleur.definirAppController(this);
+            controleur.demarrerPartie(nomJoueur1, nomJoueur2, mode);
+            appliquerScene(racine, 820, 640);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    /** Appelée par GameController (Taha) en fin de partie. */
-    public void showEndGame(String winnerName) {
-        FXMLLoader loader = buildLoader(END_GAME);
+    /** Affiche l'écran de fin de partie avec le nom du gagnant. */
+    public void afficherFin(String nomGagnant) {
+        FXMLLoader loader = construireLoader(FIN);
         if (loader == null) return;
 
         try {
-            Parent root = loader.load();
-            EndGameController controller = loader.getController();
-            controller.setAppController(this);
-            controller.setWinner(winnerName);
-            applyScene(root, 480, 360);
+            Parent racine = loader.load();
+            EndGameController controleur = loader.getController();
+            controleur.definirAppController(this);
+            controleur.definirGagnant(nomGagnant);
+            appliquerScene(racine, 730, 560);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -88,44 +89,47 @@ public class AppController {
 
     /* ------------------------------------------------------------------ */
 
-    /** Charge un FXML simple (sans données à injecter après le load). */
-    private void loadView(String fxmlPath, double width, double height) {
-        FXMLLoader loader = buildLoader(fxmlPath);
+    /** Charge un FXML simple (sans données à injecter après le chargement). */
+    private void chargerVue(String cheminFxml, double largeur, double hauteur) {
+        FXMLLoader loader = construireLoader(cheminFxml);
         if (loader == null) return;
 
         try {
-            Parent root = loader.load();
-            Object controller = loader.getController();
-            injectAppController(controller);
-            applyScene(root, width, height);
+            Parent racine = loader.load();
+            Object controleur = loader.getController();
+            injecterAppController(controleur);
+            appliquerScene(racine, largeur, hauteur);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private FXMLLoader buildLoader(String fxmlPath) {
-        var url = getClass().getResource(fxmlPath);
+    private FXMLLoader construireLoader(String cheminFxml) {
+        URL url = getClass().getResource(cheminFxml);
         if (url == null) {
-            System.err.println("FXML introuvable : " + fxmlPath);
+            System.err.println("FXML introuvable : " + cheminFxml);
             return null;
         }
         return new FXMLLoader(url);
     }
 
-    private void applyScene(Parent root, double width, double height) {
-        Scene scene = new Scene(root, width, height);
+    private void appliquerScene(Parent racine, double largeur, double hauteur) {
+        Scene scene = new Scene(racine, largeur, hauteur);
         scene.getStylesheets().add(
             getClass().getResource(CSS).toExternalForm()
         );
-        stage.setScene(scene);
-        stage.centerOnScreen();
-        stage.show();
+        fenetre.setScene(scene);
+        fenetre.centerOnScreen();
+        fenetre.show();
     }
 
-    /** Injecte this dans le controller si celui-ci expose setAppController(). */
-    private void injectAppController(Object controller) {
-        if (controller instanceof MenuController c)    c.setAppController(this);
-        else if (controller instanceof ScoresController c) c.setAppController(this);
-        else if (controller instanceof LoginController c)  c.setAppController(this);
+    /** Injecte this dans le contrôleur si celui-ci expose definirAppController(). */
+    private void injecterAppController(Object controleur) {
+        if (controleur instanceof MenuController)
+            ((MenuController) controleur).definirAppController(this);
+        else if (controleur instanceof ScoresController)
+            ((ScoresController) controleur).definirAppController(this);
+        else if (controleur instanceof LoginController)
+            ((LoginController) controleur).definirAppController(this);
     }
 }

@@ -12,7 +12,7 @@ import java.util.List;
 public class ScoreDAO {
 
     /** Retourne les meilleurs scores (triés par points décroissants). */
-    public List<ScoreEntry> getTopScores() {
+    public List<ScoreEntry> getMeilleursScores() {
         List<ScoreEntry> liste = new ArrayList<>();
         try {
             Connection conn = DatabaseManager.getConnexion();

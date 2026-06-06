@@ -21,7 +21,7 @@
          </padding>
          <children>
             <Label styleClass="title-h1" text="🏆  TABLEAU DES SCORES" />
-            <TableView fx:id="tableScores" prefHeight="420.0" prefWidth="560.0" styleClass="table-scores">
+            <TableView fx:id="tableauScores" prefHeight="420.0" prefWidth="560.0" styleClass="table-scores">
                <columns>
                   <TableColumn fx:id="colNom"       prefWidth="140.0" text="NOM" />
                   <TableColumn fx:id="colParties"   prefWidth="140.0" text="PARTIES JOUÉES" />
@@ -29,7 +29,7 @@
                   <TableColumn fx:id="colPoints"    prefWidth="140.0" text="POINTS" />
                </columns>
             </TableView>
-            <Button mnemonicParsing="false" onAction="#onRetour" styleClass="button-wood" text="← RETOUR">
+            <Button mnemonicParsing="false" onAction="#retour" styleClass="button-wood" text="← RETOUR">
                <VBox.margin>
                   <Insets top="10.0" />
                </VBox.margin>

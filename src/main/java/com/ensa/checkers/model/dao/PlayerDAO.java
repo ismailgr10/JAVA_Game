@@ -26,7 +26,7 @@ public class PlayerDAO {
     }
 
     /** Retourne true si le joueur existe déjà dans la base. */
-    public static boolean joueurExiste(String nom) {
+    private static boolean joueurExiste(String nom) {
         try {
             Connection conn = DatabaseManager.getConnexion();
             PreparedStatement stmt = conn.prepareStatement(

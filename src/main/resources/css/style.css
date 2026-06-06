@@ -10,7 +10,6 @@
      6. CHAMPS DE SAISIE & COMBOBOX
      7. TABLEAU DES SCORES (TableView)
      8. PLATEAU & PIONS (BoardView)
-     9. DIVERS / UTILITAIRES
    ============================================================ */
 
 
@@ -22,10 +21,8 @@
 
     /* -- Bois ------------------------------------------------ */
     -wood-dark:        #3E2A20;
-    -wood-dark-2:      #2A1A12;
     -wood-medium:      #6B4A33;
     -wood-light:       #D9B98C;
-    -wood-square-dark: #9C6B3F;
 
     /* -- Panneaux -------------------------------------------- */
     -panel-cream:      #F3EAD8;
@@ -39,10 +36,6 @@
 
     /* -- Accents & Jeu --------------------------------------- */
     -accent-select:    #F2C400;
-    -piece-white:      #F7F3EA;
-    -piece-white-ring: #C9C2B2;
-    -piece-black:      #3B2C22;
-    -piece-black-ring: #1E140D;
     -focus-ring:       #2E8BE6;
 
     /* -- Police par défaut ----------------------------------- */
@@ -256,13 +249,6 @@
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 24, 0.20, 0, 8);
 }
 
-/* Séparateur horizontal dans un panneau */
-.separator-wood {
-    -fx-background-color: -panel-border;
-    -fx-pref-height: 1px;
-    -fx-opacity: 0.6;
-}
-
 
 /* ===== 6. CHAMPS DE SAISIE & COMBOBOX =======================
    Style minimaliste — fond blanc cassé, bordure discrète.
@@ -471,96 +457,4 @@
     -fx-background-repeat: no-repeat;
     -fx-border-color: rgba(80, 200, 80, 0.85);
     -fx-border-width: 2px;
-}
-
-/* Pion blanc */
-.piece-white {
-    -fx-background-color: radial-gradient(
-        center 38% 35%, radius 60%,
-        #FFFFFF,
-        -piece-white,
-        -piece-white-ring
-    );
-    -fx-background-radius: 50%;
-    -fx-border-color: -piece-white-ring;
-    -fx-border-radius: 50%;
-    -fx-border-width: 2px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.55), 6, 0.3, 0, 3);
-}
-
-/* Pion noir */
-.piece-black {
-    -fx-background-color: radial-gradient(
-        center 38% 35%, radius 60%,
-        #6B5040,
-        -piece-black,
-        -piece-black-ring
-    );
-    -fx-background-radius: 50%;
-    -fx-border-color: -piece-black-ring;
-    -fx-border-radius: 50%;
-    -fx-border-width: 2px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.65), 6, 0.3, 0, 3);
-}
-
-/* Dame (couronne) — halo doré en plus */
-.piece-king {
-    -fx-effect: dropshadow(gaussian, rgba(242,196,0,0.70), 10, 0.5, 0, 0);
-}
-
-/* Pion survolé — curseur main */
-.piece-white:hover,
-.piece-black:hover {
-    -fx-cursor: hand;
-    -fx-opacity: 0.88;
-}
-
-/* Coordonnées du plateau (lettres A-H, chiffres 1-8) */
-.board-coord {
-    -fx-font-size: 11px;
-    -fx-font-weight: bold;
-    -fx-text-fill: -text-muted;
-}
-
-
-/* ===== 9. DIVERS / UTILITAIRES =============================== */
-
-/* ScrollPane transparent (pour éviter le fond gris par défaut) */
-.scroll-pane,
-.scroll-pane .viewport {
-    -fx-background-color: transparent;
-    -fx-background: transparent;
-}
-
-/* Barre de progression (timer si besoin) */
-.progress-bar .track  { -fx-background-color: derive(-wood-dark, 20%); -fx-background-radius: 4px; }
-.progress-bar .bar    { -fx-background-color: -accent-select;           -fx-background-radius: 4px; }
-
-/* Tooltip */
-.tooltip {
-    -fx-background-color: -wood-dark;
-    -fx-text-fill: -text-on-dark;
-    -fx-font-size: 12px;
-    -fx-background-radius: 6px;
-    -fx-padding: 6px 10px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 6, 0.1, 0, 2);
-}
-
-/* ContextMenu / Menu */
-.context-menu {
-    -fx-background-color: -panel-offwhite;
-    -fx-border-color: -panel-border;
-    -fx-border-width: 1px;
-    -fx-background-radius: 8px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.30), 10, 0.1, 0, 4);
-}
-
-.menu-item {
-    -fx-text-fill: -text-on-light;
-    -fx-padding: 8px 16px;
-}
-
-.menu-item:focused {
-    -fx-background-color: -wood-medium;
-    -fx-text-fill: -text-on-dark;
 }

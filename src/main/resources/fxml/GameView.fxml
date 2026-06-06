@@ -18,7 +18,7 @@
 
     <!-- ==================== CENTRE : plateau ==================== -->
     <center>
-        <StackPane fx:id="boardContainer" BorderPane.alignment="CENTER">
+        <StackPane fx:id="conteneurPlateau" BorderPane.alignment="CENTER">
             <padding>
                 <Insets bottom="16.0" left="16.0" right="0.0" top="16.0"/>
             </padding>
@@ -35,7 +35,7 @@
             <!-- Joueur courant -->
             <VBox styleClass="panel-cream" spacing="6.0" alignment="CENTER">
                 <Label text="JOUEUR COURANT" styleClass="label-info"/>
-                <Label fx:id="currentPlayerLabel" styleClass="label-value" text="—"/>
+                <Label fx:id="labelJoueurCourant" styleClass="label-value" text="—"/>
             </VBox>
 
             <!-- Captures -->
@@ -45,34 +45,34 @@
                 <HBox spacing="8.0" alignment="CENTER_LEFT">
                     <Label text="⚪" style="-fx-font-size:18px;"/>
                     <Label text="BLANC :" styleClass="label-capture"/>
-                    <Label fx:id="captureWhiteLabel" styleClass="label-capture" text="0"/>
+                    <Label fx:id="labelCapturesBlanc" styleClass="label-capture" text="0"/>
                 </HBox>
                 <HBox spacing="8.0" alignment="CENTER_LEFT">
                     <Label text="⚫" style="-fx-font-size:18px;"/>
                     <Label text="NOIR :" styleClass="label-capture"/>
-                    <Label fx:id="captureBlackLabel" styleClass="label-capture" text="0"/>
+                    <Label fx:id="labelCapturesNoir" styleClass="label-capture" text="0"/>
                 </HBox>
             </VBox>
 
             <!-- Minuteur -->
             <VBox styleClass="panel-cream" spacing="6.0" alignment="CENTER">
                 <Label text="MINUTEUR" styleClass="label-info"/>
-                <Label fx:id="timerLabel" styleClass="label-value" text="00:00"/>
+                <Label fx:id="labelMinuteur" styleClass="label-value" text="00:00"/>
             </VBox>
 
             <!-- Spacer -->
             <Region VBox.vgrow="ALWAYS"/>
 
             <!-- Boutons -->
-            <Button fx:id="abandonButton"
+            <Button fx:id="boutonAbandon"
                     text="ABANDONNER"
                     styleClass="button-danger"
                     maxWidth="Infinity"
-                    onAction="#onAbandon"/>
+                    onAction="#abandonner"/>
             <Button text="RETOUR AU MENU"
                     styleClass="button-primary"
                     maxWidth="Infinity"
-                    onAction="#onRetourMenu"/>
+                    onAction="#retournerAuMenu"/>
         </VBox>
     </right>
 

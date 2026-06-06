@@ -24,10 +24,6 @@ skinparam class {
     BorderColor<<controller>>     #229954
     BackgroundColor<<persist>>    #F4ECF7
     BorderColor<<persist>>        #7D3C98
-    BackgroundColor<<model>>      #EBF5FB
-    BorderColor<<model>>          #2E86C1
-    BackgroundColor<<fxml>>       #FEF9E7
-    BorderColor<<fxml>>           #D4AC0D
 }
 
 title <size:17><b>Jeu de Dames — Diagramme de Classes (2/2)</b></size>\n<size:11>Couches VIEW, CONTROLLER et PERSISTENCE — JavaFX + FXML</size>\n
@@ -47,97 +43,103 @@ end note
 
 ' ============ VIEW ============
 class BoardView <<view>> {
-    - {static} CELL_SIZE : int = 72
-    - {static} PIECE_SIZE : int = 56
-    - cells : StackPane[][]
-    - selectedPos : Position
-    - movable : Set<Position>
-    - dragFrom : Position
+    - {static} TAILLE_CASE : int = 72
+    - {static} TAILLE_PIECE : int = 56
+    - cases : StackPane[][]
+    - caseSelectionnee : Position
+    - casesJouables : Set<Position>
+    - departGlisser : Position
     --
-    + refresh(board) : void
-    + highlightSelected(pos) : void
-    + highlightMoves(positions) : void
-    + clearHighlights() : void
+    + rafraichir(plateau) : void
+    + marquerSelection(pos) : void
+    + marquerCoups(positions) : void
+    + effacerMarques() : void
+    + glisserPiece(depart, arrivee) : void
+    + signalerCaptures(positions) : void
+    + arreterAlerteCapture() : void
 }
 
 interface BoardViewListener <<view>> {
-    + onCellClicked(pos) : void
-    + onMoveDragged(from, to) : void
+    + onCaseCliquee(pos) : void
+    + onPieceGlissee(depart, arrivee) : void
 }
 
 ' ============ CONTROLLER ============
 class AppController <<controller>> {
-    - stage : Stage
+    - fenetre : Stage
     --
-    + showMenu() : void
-    + showLogin(mode) : void
-    + showGame(player1Name, player2Name, mode) : void
-    + showScores() : void
-    + showEndGame(winnerName) : void
+    + afficherMenu() : void
+    + afficherConfig(mode) : void
+    + afficherPartie(nomJoueur1, nomJoueur2, mode) : void
+    + afficherScores() : void
+    + afficherFin(nomGagnant) : void
 }
 
 class MenuController <<controller>> {
     - appController : AppController
     --
-    + setAppController(ac) : void
-    + onJouerHumain() : void
-    + onJouerIA() : void
-    + onScores() : void
-    + onQuitter() : void
+    + definirAppController(ac) : void
+    + jouerContreHumain() : void
+    + jouerContreIA() : void
+    + afficherScores() : void
+    + quitter() : void
 }
 
 class LoginController <<controller>> {
     - appController : AppController
-    - mode : String
-    + usernameField : TextField
-    + modeLabel : Label
+    + champNom : TextField
+    + champNom2 : TextField
+    + boiteJoueur2 : VBox
+    + listeMode : ComboBox
+    + labelErreur : Label
     --
-    + setAppController(ac) : void
-    + setMode(mode) : void
-    + onConfirm() : void
-    + onBack() : void
+    + definirAppController(ac) : void
+    + definirMode(mode) : void
+    + confirmer() : void
+    - majChampJoueur2() : void
 }
 
 class GameController <<controller>> {
     - appController : AppController
-    - game : Game
-    - boardView : BoardView
-    - selectedCell : Position
-    + currentPlayerLabel : Label
-    + timerLabel : Label
-    + captureCountLabel : Label
+    - partie : Game
+    - vuePlateau : BoardView
+    - caseSelectionnee : Position
+    - iaReflechit : boolean
+    + conteneurPlateau : StackPane
+    + labelJoueurCourant : Label
+    + labelMinuteur : Label
+    + boutonAbandon : Button
     --
-    + setAppController(ac) : void
-    + startGame(player1Name, player2Name, mode) : void
-    + onCellClicked(pos) : void
-    + onMoveDragged(from, to) : void
-    + handleAITurn() : void
-    + handleEndGame() : void
-    + updateUI() : void
+    + definirAppController(ac) : void
+    + demarrerPartie(nom1, nom2, mode) : void
+    + onCaseCliquee(pos) : void
+    + onPieceGlissee(depart, arrivee) : void
+    + jouerTourIA() : void
+    + terminerPartie() : void
+    - majInterface() : void
 }
 
 class ScoresController <<controller>> {
     - appController : AppController
-    - tableScores : TableView<ScoreEntry>
+    - tableauScores : TableView<ScoreEntry>
     - colNom : TableColumn
     - colParties : TableColumn
     - colVictoires : TableColumn
     - colPoints : TableColumn
     --
-    + setAppController(ac) : void
+    + definirAppController(ac) : void
     + initialize() : void
-    + onRetour() : void
+    + retour() : void
 }
 
 class EndGameController <<controller>> {
     - appController : AppController
-    - winnerName : String
-    + resultLabel : Label
+    + labelResultat : Label
     --
-    + setAppController(ac) : void
-    + setWinner(winnerName) : void
-    + onPlayAgain() : void
-    + onBackToMenu() : void
+    + definirAppController(ac) : void
+    + definirGagnant(nomGagnant) : void
+    + rejouer() : void
+    + retournerAuMenu() : void
 }
 
 ' ============ PERSISTENCE ============
@@ -145,12 +147,11 @@ class DatabaseManager <<persist>> {
     - {static} connexion : Connection
     --
     + {static} getConnexion() : Connection
-    + {static} fermerConnexion() : void
 }
 
 class PlayerDAO <<persist>> {
     + {static} ajouterJoueur(nom) : void
-    + {static} joueurExiste(nom) : boolean
+    - {static} joueurExiste(nom) : boolean
 }
 
 class GameDAO <<persist>> {
@@ -158,7 +159,7 @@ class GameDAO <<persist>> {
 }
 
 class ScoreDAO <<persist>> {
-    + getTopScores() : List<ScoreEntry>
+    + getMeilleursScores() : List<ScoreEntry>
     + mettreAJourScore(nom, victoire) : void
 }
 
@@ -188,49 +189,34 @@ BoardView      --> BoardViewListener : notifie (listener injecté via constructe
 ' --- Relations : navigation via AppController ---
 MenuController    --> AppController : navigue
 LoginController   --> AppController : navigue
+GameController    --> AppController : navigue
 EndGameController --> AppController : navigue
 ScoresController  --> AppController : navigue
-
-' --- Relations : Persistence ---
-PlayerDAO  ..> DatabaseManager : utilise
-GameDAO    ..> DatabaseManager : utilise
-ScoreDAO   ..> DatabaseManager : utilise
-ScoreDAO   ..> ScoreEntry      : produit
-
-' --- Relations : Controller utilise Persistence ---
-ScoresController ..> ScoreDAO : interroge
-
-note top of GameController
-  <b>Squelette</b> — à implémenter.
-  Implémentera BoardViewListener,
-  recevra les clics/drag de BoardView,
-  déléguera à GameRules et Board.
-end note
 
 note top of AppController
   <b>Routeur central</b>
   Charge les FXML via FXMLLoader,
-  injecte this dans chaque controller,
+  injecte this dans chaque contrôleur,
   gère les transitions d'écran via Stage.setScene().
 end note
 
 note bottom of DatabaseManager
   <b>Connexion statique partagée</b>
   (pattern Singleton sans getInstance).
-  Credentials lus depuis config.properties.
+  Identifiants lus depuis config.properties.
 end note
 
 note right of BoardView
   <b>Vue programmatique (pas FXML)</b>
   Extends GridPane. Affiche les cases
-  (StackPane) et pions (ImageView).
-  Listener injecté via constructeur.
+  (StackPane) et pions (ImageView), et
+  anime le glissement (TranslateTransition).
   Aucune règle métier ici.
 end note
 
 legend bottom
-  <back:#FDEDEC>   </back> View (JavaFX)   <back:#E9F7EF>   </back> Controller (@FXML)   <back:#F4ECF7>   </back> Persistence   <back:#EBF5FB>   </back> Model (rappel)   <back:#FEF9E7>   </back> Vues FXML (fichiers XML)
-  ──▷ Héritage   ┄┄▷ Implémentation / Dépendance   ──> Association   ◆── Composition
+  <back:#FDEDEC>   </back> View (JavaFX)   <back:#E9F7EF>   </back> Controller (@FXML)   <back:#F4ECF7>   </back> Persistence   <back:#FEF9E7>   </back> Vues FXML (fichiers XML)
+  ──▷ Héritage   ┄┄▷ Implémentation   ──> Association   ◆── Composition
 endlegend
 
 @enduml

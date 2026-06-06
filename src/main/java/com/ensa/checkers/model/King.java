@@ -4,65 +4,82 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Dame volante (règle espagnole) :
- * se déplace et capture sur toute distance diagonale.
+ * Dame (« dame volante », règle espagnole).
+ *
+ * Contrairement au pion, la dame se déplace et capture sur toute la longueur
+ * d'une diagonale, dans les quatre directions. Pour capturer, elle peut s'arrêter
+ * sur n'importe quelle case vide située derrière la pièce adverse sautée.
  */
 public class King extends Piece {
 
-    public King(PieceColor color, Position position) {
-        super(color, position);
+    public King(PieceColor couleur, Position position) {
+        super(couleur, position);
     }
 
-    /** Déplacements simples uniquement (cases vides sur les diagonales).
-     *  Les captures sont produites séparément par {@link #getCaptures}. */
+    /**
+     * Déplacements simples : on parcourt chaque diagonale tant que les cases sont vides.
+     * Les captures sont calculées à part par {@link #getCapturesImmediates}.
+     */
     @Override
-    public List<Move> getPossibleMoves(Board board) {
-        List<Move> moves = new ArrayList<>();
-        int row = getPosition().getRow();
-        int col = getPosition().getCol();
+    public List<Move> getCoupsPossibles(Board plateau) {
+        List<Move> coups = new ArrayList<>();
+        int ligne = getPosition().getLigne();
+        int colonne = getPosition().getColonne();
 
-        for (int dr : new int[]{-1, 1}) {
+        // dl/dc = direction diagonale : les 4 combinaisons couvrent les 4 diagonales
+        for (int dl : new int[]{-1, 1}) {
             for (int dc : new int[]{-1, 1}) {
-                int r = row + dr, c = col + dc;
-                while (Position.isValid(r, c) && board.getPieceAt(new Position(r, c)) == null) {
-                    moves.add(new Move(getPosition(), new Position(r, c)));
-                    r += dr; c += dc;
+                int l = ligne + dl, c = colonne + dc;
+                while (Position.estValide(l, c) && plateau.getPiece(new Position(l, c)) == null) {
+                    coups.add(new Move(getPosition(), new Position(l, c)));
+                    l += dl; c += dc;   // on continue d'avancer sur la même diagonale
                 }
             }
         }
-        return moves;
+        return coups;
     }
 
     @Override
-    public boolean canPromote() { return false; }
+    public boolean peutEtrePromu() { return false; }   // une dame ne peut plus être promue
 
+    /**
+     * Captures de la dame : sur chaque diagonale, on cherche le premier ennemi,
+     * puis on liste toutes les cases vides situées derrière lui (autant de cases
+     * d'atterrissage possibles).
+     */
     @Override
-    public List<int[]> getCaptures(Board board, Position from) {
-        List<int[]> steps = new ArrayList<>();
-        int row = from.getRow(), col = from.getCol();
+    public List<int[]> getCapturesImmediates(Board plateau, Position depart) {
+        List<int[]> pas = new ArrayList<>();
+        int ligne = depart.getLigne(), colonne = depart.getColonne();
 
-        for (int dr : new int[]{-1, 1}) {
+        for (int dl : new int[]{-1, 1}) {
             for (int dc : new int[]{-1, 1}) {
-                int[] enemy = firstEnemy(board, row, col, dr, dc);
-                if (enemy == null) continue;
-                int lr = enemy[0] + dr, lc = enemy[1] + dc;
-                while (Position.isValid(lr, lc) && board.getPieceAt(new Position(lr, lc)) == null) {
-                    steps.add(new int[]{enemy[0], enemy[1], lr, lc});
-                    lr += dr; lc += dc;
+                int[] ennemi = premierEnnemi(plateau, ligne, colonne, dl, dc);
+                if (ennemi == null) continue;            // pas d'ennemi capturable sur cette diagonale
+
+                // Toutes les cases vides derrière l'ennemi sont des arrivées possibles
+                int la = ennemi[0] + dl, ca = ennemi[1] + dc;
+                while (Position.estValide(la, ca) && plateau.getPiece(new Position(la, ca)) == null) {
+                    pas.add(new int[]{ennemi[0], ennemi[1], la, ca});
+                    la += dl; ca += dc;
                 }
             }
         }
-        return steps;
+        return pas;
     }
 
-    /** Premier ennemi sur une diagonale, ou null si aucun (ou allié bloquant). */
-    private int[] firstEnemy(Board board, int row, int col, int dr, int dc) {
-        int r = row + dr, c = col + dc;
-        while (Position.isValid(r, c)) {
-            Piece occ = board.getPieceAt(new Position(r, c));
-            if (occ != null)
-                return (occ.getColor() != getColor()) ? new int[]{r, c} : null;
-            r += dr; c += dc;
+    /**
+     * Cherche la première pièce rencontrée sur une diagonale.
+     * Retourne sa position si c'est un ennemi, ou null si c'est un allié (qui bloque)
+     * ou si la diagonale est vide jusqu'au bord.
+     */
+    private int[] premierEnnemi(Board plateau, int ligne, int colonne, int dl, int dc) {
+        int l = ligne + dl, c = colonne + dc;
+        while (Position.estValide(l, c)) {
+            Piece occupant = plateau.getPiece(new Position(l, c));
+            if (occupant != null)
+                return (occupant.getCouleur() != getCouleur()) ? new int[]{l, c} : null;
+            l += dl; c += dc;
         }
         return null;
     }
