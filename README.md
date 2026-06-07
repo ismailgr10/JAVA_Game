@@ -299,8 +299,4 @@ Les diagrammes sources (PlantUML) se trouvent dans [`doc/`](doc/).
 
 ---
 
-<div align="center">
 
-Fait avec ☕ à l'**ENSA**
-
-</div>
